@@ -365,7 +365,10 @@ class UpenwrtContext:
 		self.cachedir = p.join(self.basedir, 'cache')
 		self.workdir = p.join(self.basedir, 'work')
 		self.repodir = p.join(self.basedir, 'repo')
+
 		self.baseurl = baseurl
+		baseparsed = urllib.parse.urlparse(baseurl)
+		self.baseurlpath = baseparsed.path
 
 
 class UpenwrtHTTPServer(http.server.HTTPServer):
@@ -419,21 +422,21 @@ class UpenwrtHTTPRequestHandler(UpenwrtHTTPRequestHandlerFiles):
 		assert(not url.scheme)
 		assert(not url.netloc)
 
-		if url.path == '/':
+		if url.path == self.context.baseurlpath + '/':
 			try:
 				self.path = '/README.txt'
 				return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
 			except Exception:
 				return self.send_error_exc(500, explain=f'Internal error')
 
-		elif url.path == '/get':
+		elif url.path == self.context.baseurlpath + '/get':
 			try:
 				self.path = '/get.sh'
 				return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
 			except Exception:
 				return self.send_error_exc(500, explain=f'Internal error')
 
-		elif url.path == '/api/get':
+		elif url.path == self.context.baseurlpath + '/api/get':
 			try:
 				args = urllib.parse.parse_qs(url.query)
 				print(f'GET /api/get({args})')
