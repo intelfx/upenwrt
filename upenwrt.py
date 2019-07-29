@@ -75,7 +75,10 @@ class OpenwrtArtifact:
 		return f'https://downloads.openwrt.org/{self.release_path}/targets/{self.target_name}'
 
 	def openwrt_imagebuilder_name(self):
-		return f'openwrt-imagebuilder-{self.target_name.replace("/", "-")}.Linux-x86_64.tar.xz'
+		if self.version_id == 'snapshot':
+			return f'openwrt-imagebuilder-{self.target_name.replace("/", "-")}.Linux-x86_64.tar.xz'
+		else:
+			return f'openwrt-imagebuilder-{self.version_id}-{self.target_name.replace("/", "-")}.Linux-x86_64.tar.xz'
 
 	def __init__(self, *, context, target_name, version_id):
 		self.context = context
@@ -87,6 +90,8 @@ class OpenwrtArtifact:
 			self.release_path = 'snapshots'
 		else:
 			self.release_path = f'releases/{version_id}'
+
+		self.version_id = version_id
 
 		self.base_url = self.openwrt_base_url()
 		self.imagebuilder_file = None
