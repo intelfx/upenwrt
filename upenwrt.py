@@ -390,7 +390,7 @@ class UpenwrtHTTPRequestHandler(UpenwrtHTTPRequestHandlerFiles):
 			self.path = '/get.sh'
 			return UpenwrtHTTPRequestHandlerFiles.do_HEAD(self)
 		else:
-			return self.send_error(404)
+			return self.send_error(405)
 
 	def do_GET(self):
 		url = urllib.parse.urlsplit(self.path)
