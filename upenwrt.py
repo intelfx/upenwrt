@@ -511,3 +511,6 @@ def main():
 
 	httpd = UpenwrtHTTPServer(httpd_address, UpenwrtHTTPRequestHandler, context=httpd_context)
 	httpd.serve_forever()
+
+if __name__ == '__main__':
+	main()
