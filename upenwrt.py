@@ -354,12 +354,13 @@ class OpenwrtOperation:
 
 
 class UpenwrtContext:
-	def __init__(self, *, basedir):
+	def __init__(self, *, basedir, baseurl):
 		self.basedir = basedir
 		self.staticdir = p.join(self.basedir, 'static')
 		self.cachedir = p.join(self.basedir, 'cache')
 		self.workdir = p.join(self.basedir, 'work')
 		self.repodir = p.join(self.basedir, 'repo')
+		self.baseurl = baseurl
 
 
 class UpenwrtHTTPServer(http.server.HTTPServer):
@@ -368,9 +369,25 @@ class UpenwrtHTTPServer(http.server.HTTPServer):
 		self.context = context
 
 
-class UpenwrtHTTPRequestHandlerFiles(http.server.SimpleHTTPRequestHandler):
-	def __init__(self, *args, **kwargs):
-		http.server.SimpleHTTPRequestHandler.__init__(self, *args, **kwargs, directory=self.context.staticdir)
+#class UpenwrtHTTPRequestHandlerFiles(http.server.SimpleHTTPRequestHandler):
+#	def __init__(self, *args, **kwargs):
+#		http.server.SimpleHTTPRequestHandler.__init__(self, *args, **kwargs, directory=self.context.staticdir)
+
+class UpenwrtHTTPRequestHandlerFiles(http.server.BaseHTTPRequestHandler):
+	def do_HEAD(self):
+		return self.send_error(405)
+
+	def do_GET(self):
+		with open(self.context.staticdir + self.path, 'r') as f:
+			data = f.read()
+
+		data = data.replace('@BASE_URL@', self.context.baseurl)
+
+		self.send_response(200)
+		self.send_header('Content-Type', 'text/plain;charset=utf-8')
+		self.send_header('Content-Length', str(len(data)))
+		self.end_headers()
+		self.wfile.write(data.encode('utf-8'))
 
 
 class UpenwrtHTTPRequestHandler(UpenwrtHTTPRequestHandlerFiles):
@@ -398,8 +415,12 @@ class UpenwrtHTTPRequestHandler(UpenwrtHTTPRequestHandlerFiles):
 		assert(not url.netloc)
 
 		if url.path == '/get':
-			self.path = '/get.sh'
-			return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
+			try:
+				self.path = '/get.sh'
+				return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
+			except Exception:
+				return self.send_error_exc(500, explain=f'Internal error')
+
 		elif url.path == '/api/get':
 			try:
 				args = urllib.parse.parse_qs(url.query)
@@ -474,11 +495,13 @@ def main():
 	parser.add_argument('-l', '--listen', default='')
 	parser.add_argument('-p', '--port', type=int, default=8000)
 	parser.add_argument('-d', '--basedir', default='')
+	parser.add_argument('-b', '--baseurl', default='http://localhost:8000')
 	args = parser.parse_args()
 
 	httpd_address = (args.listen, args.port)
 	httpd_context = UpenwrtContext(
 		basedir=p.join(os.getcwd(), args.basedir),
+		baseurl=args.baseurl,
 	)
 
 	httpd = UpenwrtHTTPServer(httpd_address, UpenwrtHTTPRequestHandler, context=httpd_context)
