@@ -1,0 +1,26 @@
+From 87435e1793874262aaf8970482f5819d20148e3d Mon Sep 17 00:00:00 2001
+From: Ivan Shapovalov <intelfx@intelfx.name>
+Date: Mon, 29 Jul 2019 07:30:22 +0300
+Subject: [PATCH] upenwrt: include/target.mk: fix Target block generation
+
+---
+ include/target.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/target.mk b/include/target.mk
+index a813ba2d2d..b3cc6a5376 100644
+--- a/include/target.mk
++++ b/include/target.mk
+@@ -292,8 +292,8 @@ define BuildTargets/DumpCurrent
+ 	$(if $(SUBTARGET),,$(if $(DEFAULT_SUBTARGET), echo 'Default-Subtarget: $(DEFAULT_SUBTARGET)'; )) \
+ 	 echo 'Target-Description:'; \
+ 	 echo "$$$$DESCRIPTION"; \
+-	 echo '@@'; \
+ 	 echo 'Default-Packages: $(DEFAULT_PACKAGES) $(call extra_packages,$(DEFAULT_PACKAGES))'; \
++	 echo '@@'; \
+ 	 $(DUMPINFO)
+ 	$(if $(CUR_SUBTARGET),$(SUBMAKE) -r --no-print-directory -C image -s DUMP=1 SUBTARGET=$(CUR_SUBTARGET))
+ 	$(if $(SUBTARGET),,@$(foreach SUBTARGET,$(SUBTARGETS),$(SUBMAKE) -s DUMP=1 SUBTARGET=$(SUBTARGET); ))
+-- 
+2.22.0
+
