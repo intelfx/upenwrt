@@ -133,6 +133,8 @@ class OpenwrtSource:
 			m = OpenwrtSource.REVISION.fullmatch(revision)
 			if m:
 				return m[2]
+		else:
+			return release
 		raise ValueError(f'OpenwrtSource: bad revision: release={release}, revision={revision}')
 
 	def __init__(self, *, context, target_name, release, revision):
