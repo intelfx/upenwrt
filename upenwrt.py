@@ -419,7 +419,14 @@ class UpenwrtHTTPRequestHandler(UpenwrtHTTPRequestHandlerFiles):
 		assert(not url.scheme)
 		assert(not url.netloc)
 
-		if url.path == '/get':
+		if url.path == '/':
+			try:
+				self.path = '/README.txt'
+				return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
+			except Exception:
+				return self.send_error_exc(500, explain=f'Internal error')
+
+		elif url.path == '/get':
 			try:
 				self.path = '/get.sh'
 				return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
