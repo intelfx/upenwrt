@@ -8,6 +8,8 @@ It is designed to aid end-user upgrade process (saving you the hassle of
 reinstalling all your packages by hand), especially if the target device relies
 on non-default packages for Internet connectivity.
 
+[1]: https://openwrt.org
+
 # usage
 
 Assuming that the daemon is reachable at <http://upenwrt:8000>:
@@ -68,6 +70,8 @@ mkdir -p /var/lib/upenwrt/cache
 mkdir -p /var/lib/upenwrt/work; mount tmpfs -t tmpfs /var/lib/upenwrt/work
 ./upenwrt.py --rootdir /var/lib/upenwrt --baseurl http://upenwrt:8000 --listen '0.0.0.0' --port 8000
 ```
+
+[2]: https://git.openwrt.org/openwrt/openwrt.git
 
 # trivia
 
