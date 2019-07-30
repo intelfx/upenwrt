@@ -388,16 +388,19 @@ class UpenwrtHTTPRequestHandlerFiles(http.server.BaseHTTPRequestHandler):
 		return self.send_error(405)
 
 	def do_GET(self):
-		with open(self.context.staticdir + self.path, 'r') as f:
-			data = f.read()
+		try:
+			with open(self.context.staticdir + self.path, 'r') as f:
+				data = f.read()
 
-		data = data.replace('@BASE_URL@', self.context.baseurl)
+			data = data.replace('@BASE_URL@', self.context.baseurl)
 
-		self.send_response(200)
-		self.send_header('Content-Type', 'text/plain;charset=utf-8')
-		self.send_header('Content-Length', str(len(data)))
-		self.end_headers()
-		self.wfile.write(data.encode('utf-8'))
+			self.send_response(200)
+			self.send_header('Content-Type', 'text/plain;charset=utf-8')
+			self.send_header('Content-Length', str(len(data)))
+			self.end_headers()
+			self.wfile.write(data.encode('utf-8'))
+		except:
+			return self.send_error_exc(500, explain=f'Internal error')
 
 
 class UpenwrtHTTPRequestHandler(UpenwrtHTTPRequestHandlerFiles):
@@ -421,20 +424,14 @@ class UpenwrtHTTPRequestHandler(UpenwrtHTTPRequestHandlerFiles):
 		assert(not url.netloc)
 
 		if url.path == self.context.baseurlpath + '/':
-			try:
-				self.path = '/README.txt'
-				return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
-			except Exception:
-				return self.send_error_exc(500, explain=f'Internal error')
+			self.path = '/README.txt'
+			return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
 
-		elif url.path == self.context.baseurlpath + '/get':
-			try:
-				self.path = '/get.sh'
-				return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
-			except Exception:
-				return self.send_error_exc(500, explain=f'Internal error')
+		if url.path == self.context.baseurlpath + '/get':
+			self.path = '/get.sh'
+			return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
 
-		elif url.path == self.context.baseurlpath + '/api/get':
+		if url.path == self.context.baseurlpath + '/api/get':
 			try:
 				args = urllib.parse.parse_qs(url.query)
 				print(f'GET /api/get({args})')
