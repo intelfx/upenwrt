@@ -134,7 +134,7 @@ class OpenwrtSource:
 			if m:
 				return m[2]
 		else:
-			return release
+			return f'v{release}'
 		raise ValueError(f'OpenwrtSource: bad revision: release={release}, revision={revision}')
 
 	def __init__(self, *, context, target_name, release, revision):
