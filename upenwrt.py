@@ -425,15 +425,19 @@ class UpenwrtHTTPRequestHandler(UpenwrtHTTPRequestHandlerFiles):
 		assert(not url.scheme)
 		assert(not url.netloc)
 
-		if url.path == self.context.baseurlpath + '/':
+		if not url.path.startswith(self.context.baseurlpath):
+			return self.send_error(404)
+		path = url.path.replace(self.context.baseurlpath, '', 1)
+
+		if path == '/':
 			self.path = '/README.txt'
 			return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
 
-		if url.path == self.context.baseurlpath + '/get':
+		if path == '/get':
 			self.path = '/get.sh'
 			return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
 
-		if url.path == self.context.baseurlpath + '/api/get':
+		if path == '/api/get':
 			try:
 				args = urllib.parse.parse_qs(url.query)
 				print(f'GET /api/get({args})')
