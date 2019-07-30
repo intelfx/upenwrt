@@ -390,11 +390,13 @@ class UpenwrtHTTPRequestHandlerFiles(http.server.BaseHTTPRequestHandler):
 	def do_GET(self):
 		try:
 			with open(self.context.staticdir + self.path, 'r') as f:
+				st = os.stat(f.fileno())
 				data = f.read()
 
 			data = data.replace('@BASE_URL@', self.context.baseurl)
 
 			self.send_response(200)
+			self.send_header('Last-Modified', get_last_modified(st))
 			self.send_header('Content-Type', 'text/plain;charset=utf-8')
 			self.send_header('Content-Length', str(len(data)))
 			self.end_headers()
