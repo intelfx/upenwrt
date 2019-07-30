@@ -167,11 +167,6 @@ for p in $PACKAGES; do
 done
 log "\$CURL='$CURL'"
 
-if test -n "$DRY_RUN"; then
-	echo "$CURL"
-	exit 0
-fi
-
 # invoke curl protecting against server errors
 TMP_BODY="$(mktemp)"
 TMP_STATUS="$(mktemp)"
