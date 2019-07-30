@@ -66,7 +66,6 @@ opkg_get_user() {
 	#	opkg_get_user_all
 	#fi
 	opkg_get_user_all \
-		| grep -v '^lib' \
 		| tr -s ' \n' ' '
 }
 
