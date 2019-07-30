@@ -413,11 +413,7 @@ class UpenwrtHTTPRequestHandler(UpenwrtHTTPRequestHandlerFiles):
 		return self.send_error(code=code, message=message, explain=f'{explain}:\n{"".join(traceback.format_exception(*e))}')
 
 	def do_HEAD(self):
-		if self.path == '/get':
-			self.path = '/get.sh'
-			return UpenwrtHTTPRequestHandlerFiles.do_HEAD(self)
-		else:
-			return self.send_error(405)
+		return self.send_error(405)
 
 	def do_GET(self):
 		url = urllib.parse.urlsplit(self.path)
