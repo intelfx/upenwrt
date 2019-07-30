@@ -489,6 +489,8 @@ class UpenwrtHTTPRequestHandler(UpenwrtHTTPRequestHandlerFiles):
 
 			try:
 				with f:
+					st = os.stat(f.fileno())
+
 					self.send_response(200)
 					self.send_header('Content-Type', 'application/octet-stream')
 					self.send_header('Content-Length', st.st_size)
