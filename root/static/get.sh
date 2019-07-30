@@ -60,13 +60,25 @@ opkg_get_user_ovl() {
 }
 
 opkg_get_user() {
-	#if [ -r "$OPKG_STATUS_ROM" -a -r "$OPKG_STATUS" ]; then
-	#	opkg_get_user_ovl
-	#else
-	#	opkg_get_user_all
-	#fi
-	opkg_get_user_all \
-		| tr -s ' \n' ' '
+	pkgs_add="$(mktemp)"
+	pkgs_remove="$(mktemp)"
+	pkgs_0="$(mktemp)"
+	pkgs_1="$(mktemp)"
+	pkgs_2="$(mktemp)"
+
+	opkg_get_user_all > "$pkgs_0" # sorted
+
+	# add pkgs
+	printf "%s\n" $PKGS_ADD | sort > "$pkgs_add"
+	cat "$pkgs_0" "$pkgs_add" | sort | uniq > "$pkgs_1"
+	# remove pkgs
+	printf "%s\n" $PKGS_REMOVE | sort > "$pkgs_remove"
+	cat "$pkgs_1" "$pkgs_remove" "$pkgs_remove" | sort | uniq -u > "$pkgs_2"
+	# write result
+	cat "$pkgs_2" | tr -s ' \n' ' '
+
+	# remove temp files
+	rm -f "$pkgs_0" "$pkgs_1" "$pkgs_2" "$pkgs_add" "$pkgs_remove"
 }
 
 # determine board path
@@ -117,6 +129,18 @@ else
 	die "/etc/openwrt_release does not exist or is not a regular file, exiting"
 fi
 log_choice REVISION
+
+
+# determine packages partial overrides
+if test -n "$PKGS_ADD"; then
+	PKGS_ADD_reason=override
+	log_choice PKGS_ADD
+fi
+
+if test -n "$PKGS_REMOVE"; then
+	PKGS_REMOVE_reason=override
+	log_choice PKGS_REMOVE
+fi
 
 # determine user-installed packages
 if test -n "$PACKAGES"; then
