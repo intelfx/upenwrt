@@ -162,6 +162,7 @@ CURL="$CURL -d 'board_name=$BOARD_NAME'"
 CURL="$CURL -d 'current_release=$RELEASE'"
 CURL="$CURL -d 'current_revision=$REVISION'"
 CURL="$CURL -d 'target_version=$TARGET'"
+CURL="$CURL @API_ARGS@"
 for p in $PACKAGES; do
 	CURL="$CURL -d 'pkgs=$p'"
 done

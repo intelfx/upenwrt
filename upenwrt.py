@@ -278,6 +278,13 @@ class OpenwrtTargetinfo:
 		self.targets = targets
 
 
+@attr.s(kw_only=True)
+class OpenwrtOperationDetails:
+	builddir = attr.ib(type=str)
+	profile = attr.ib(type=OpenwrtProfile)
+	packages = attr.ib(type=set)
+
+
 class OpenwrtOperation:
 	def __init__(self, *, context, source, artifact, target_name, board_name, pkgs):
 		self.context = context
@@ -296,7 +303,7 @@ class OpenwrtOperation:
 		if self.workdir:
 			shutil.rmtree(self.workdir)
 
-	def build(self):
+	def prepare(self):
 		assert(self.workdir)
 		print(f'workdir: {self.workdir}')
 		print(f'target: {self.target_name}')
@@ -307,7 +314,7 @@ class OpenwrtOperation:
 
 		bld_targetinfo = self.artifact.get_targetinfo(builddir)
 		bld_profile = bld_targetinfo.profiles[self.board_name]
-		print(f'build profile: {bld_profile}')
+		print(f'desired profile: {bld_profile}')
 
 		if self.source:
 			sourcedir = self.source.get_checkout(self.workdir)
@@ -315,9 +322,9 @@ class OpenwrtOperation:
 
 			src_targetinfo = self.source.get_targetinfo(sourcedir)
 			src_target = src_targetinfo.targets[self.target_name]
-			print(f'src target: {src_target}')
+			print(f'existing target: {src_target}')
 			src_profile = src_targetinfo.profiles[self.board_name]
-			print(f'src profile: {src_profile}')
+			print(f'existing profile: {src_profile}')
 			default_target_packages = set(src_target.packages)
 			default_profile_packages = set(src_profile.packages)
 		else:
@@ -333,9 +340,9 @@ class OpenwrtOperation:
 		print(f'default packages in target only: {default_target_only_packages}')
 		print(f'default packages in profile only: {default_profile_only_packages}')
 
-		default_packages = set(default_target_packages) | set(default_profile_packages)
+		default_packages = default_target_packages | default_profile_packages
 		print(f'default packages: {default_packages}')
-		packages = set(self.packages)
+		packages = self.packages
 		print(f'passed packages: {packages}')
 
 		default_only_packages = default_packages - packages
@@ -343,12 +350,26 @@ class OpenwrtOperation:
 		print(f'packages in default only (user removed!): {default_only_packages}')
 		print(f'packages in user only (user installed!): {user_only_packages}')
 
-		make_image = run(
-			[ 'make', 'image', f'PROFILE={bld_profile.name}', f'PACKAGES={" ".join(user_only_packages)}' ],
-			cwd=builddir,
+		return OpenwrtOperationDetails(
+			builddir=builddir,
+			profile=bld_profile,
+			packages=user_only_packages,
 		)
 
-		outdir = p.join(builddir, 'bin', 'targets', self.artifact.target_name)
+	def list_packages(self):
+		prep = self.prepare()
+
+		return ' '.join(prep.packages)
+
+	def build(self):
+		prep = self.prepare()
+
+		make_image = run(
+			[ 'make', 'image', f'PROFILE={prep.profile.name}', f'PACKAGES={" ".join(prep.packages)}' ],
+			cwd=prep.builddir,
+		)
+
+		outdir = p.join(prep.builddir, 'bin', 'targets', self.artifact.target_name)
 		print(f'outdir: {outdir}')
 		filelist = os.listdir(outdir)
 		print(f'outdir files: {filelist}')
@@ -393,7 +414,8 @@ class UpenwrtHTTPRequestHandlerFiles(http.server.BaseHTTPRequestHandler):
 				st = os.stat(f.fileno())
 				data = f.read()
 
-			data = data.replace('@BASE_URL@', self.context.baseurl)
+			for k, v in self.replacements.items():
+				data = data.replace(f'@{k}@', v)
 
 			self.send_response(200)
 			self.send_header('Last-Modified', get_last_modified(st))
@@ -408,6 +430,7 @@ class UpenwrtHTTPRequestHandlerFiles(http.server.BaseHTTPRequestHandler):
 class UpenwrtHTTPRequestHandler(UpenwrtHTTPRequestHandlerFiles):
 	def __init__(self, request, client_address, server, *args, **kwargs):
 		self.context = server.context
+		self.replacements = None
 		self.error_message_format = '''%(explain)s'''
 		self.error_content_type = 'text/plain;charset=utf-8'
 		UpenwrtHTTPRequestHandlerFiles.__init__(self, request, client_address, server, *args, **kwargs)
@@ -429,12 +452,26 @@ class UpenwrtHTTPRequestHandler(UpenwrtHTTPRequestHandlerFiles):
 			return self.send_error(404)
 		path = url.path.replace(self.context.baseurlpath, '', 1)
 
+		self.replacements = {
+			'BASE_URL': self.context.baseurl,
+		}
+
 		if path == '/':
 			self.path = '/README.txt'
 			return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
 
 		if path == '/get':
 			self.path = '/get.sh'
+			self.replacements.update({
+				'API_ARGS': ''
+			})
+			return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
+
+		if path == '/list':
+			self.path = '/get.sh'
+			self.replacements.update({
+				'API_ARGS': "-d 'mode=list'"
+			})
 			return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
 
 		if path == '/api/get':
@@ -451,6 +488,7 @@ class UpenwrtHTTPRequestHandler(UpenwrtHTTPRequestHandlerFiles):
 				current_revision, = *args.get('current_revision', None),
 				target_version, = *args.get('target_version', ['snapshot']),
 				pkgs = args.get('pkgs', [])
+				mode, = *args.get('mode', ['build']),
 
 				artifact = OpenwrtArtifact(
 					context=self.context,
@@ -480,26 +518,37 @@ class UpenwrtHTTPRequestHandler(UpenwrtHTTPRequestHandlerFiles):
 				return self.send_error_exc(500, explain=f'Internal error parsing arguments')
 
 			try:
-				with op:
-					output = op.build()
-					f = open(output, 'rb')
+				if mode == 'build':
+					with op:
+						output = op.build()
+						f = open(output, 'rb')
 
-			except Exception:
-				return self.send_error_exc(500, explain=f'Internal error building firmware')
+					with f:
+						st = os.stat(f.fileno())
 
-			try:
-				with f:
-					st = os.stat(f.fileno())
+						self.send_response(200)
+						self.send_header('Content-Type', 'application/octet-stream')
+						self.send_header('Content-Length', st.st_size)
+						self.end_headers()
+
+						shutil.copyfileobj(f, self.wfile)
+
+				elif mode == 'list':
+					with op:
+						output = op.list_packages()
 
 					self.send_response(200)
-					self.send_header('Content-Type', 'application/octet-stream')
-					self.send_header('Content-Length', st.st_size)
+					self.send_header('Content-Type', 'text/plain;charset=utf-8')
+					self.send_header('Content-Length', len(output))
 					self.end_headers()
 
-					shutil.copyfileobj(f, self.wfile)
+					self.wfile.write(output.encode('utf-8'))
+
+				else:
+					raise ValueError(f'Bad mode: {mode}, expected "build" or "list"')
 
 			except Exception:
-				return self.send_error_exc(500, explain=f'Internal error sending firmware')
+				return self.send_error_exc(500, explain=f'Internal error processing request')
 
 		else:
 			return self.send_error(404)
