@@ -127,8 +127,6 @@ else
 		OPKG_STATUS_reason="override"
 	else
 		OPKG_STATUS="/usr/lib/opkg/status"
-		OPKG_STATUS_ROM="/rom$OPKG_STATUS"
-		OPKG_STATUS_OVL="$OPKG_STATUS"
 		OPKG_STATUS_reason="default"
 	fi
 	log_choice OPKG_STATUS
