@@ -448,33 +448,31 @@ class UpenwrtHTTPRequestHandler(UpenwrtHTTPRequestHandlerFiles):
 		assert(not url.scheme)
 		assert(not url.netloc)
 
-		if not url.path.startswith(self.context.baseurlpath):
-			return self.send_error(404)
-		path = url.path.replace(self.context.baseurlpath, '', 1)
+		path = p.relpath(url.path, self.context.baseurlpath)
 
 		self.replacements = {
 			'BASE_URL': self.context.baseurl,
 		}
 
-		if path == '/':
+		if path == '.':
 			self.path = '/README.txt'
 			return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
 
-		if path == '/get':
+		if path == 'get':
 			self.path = '/get.sh'
 			self.replacements.update({
 				'API_ARGS': ''
 			})
 			return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
 
-		if path == '/list':
+		if path == 'list':
 			self.path = '/get.sh'
 			self.replacements.update({
 				'API_ARGS': "-d 'mode=list'"
 			})
 			return UpenwrtHTTPRequestHandlerFiles.do_GET(self)
 
-		if path == '/api/get':
+		if path == 'api/get':
 			try:
 				args = urllib.parse.parse_qs(url.query)
 				print(f'GET /api/get({args})')
