@@ -6,12 +6,12 @@ NAME
 
 SYNOPSIS
 
-    curl @BASE_URL@/get.sh | sh -s <RELEASE> >/tmp/sysupgrade.img
+    curl @BASE_URL@/get | sh -s RELEASE >/tmp/sysupgrade.img
     sysupgrade /tmp/sysupgrade.img
 
 OPTIONS
 
-    <RELEASE>
+    RELEASE
         OpenWRT release (e. g. "18.06.4") or the string "snapshot".
 
 FILES
