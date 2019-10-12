@@ -32,7 +32,7 @@ class UpenwrtContext:
 			workdir=p.join(basedir, 'work'),
 			repodir=p.join(basedir, 'repo'),
 			baseurl=baseurl,
-			baseurlpath=baseparsed.path or '/',
+			baseurlpath=p.normpath(p.join('/', baseparsed.path)),
 		)
 
 
