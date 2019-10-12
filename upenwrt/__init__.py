@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/hint/python3
 
 import sys
 import os
@@ -308,7 +308,7 @@ class OpenwrtOperation:
 		print(f'workdir: {self.workdir}')
 		print(f'target: {self.target_name}')
 		print(f'board: {self.board_name}')
-		
+
 		builddir = self.artifact.get_imagebuilder(self.workdir)
 		print(f'builddir: {builddir}')
 
