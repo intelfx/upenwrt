@@ -1,5 +1,5 @@
 #!/hint/python3
 
-from .__init__ import main
+from . import main
 
 main()
