@@ -4,22 +4,36 @@ import os
 import os.path as p
 import http.server
 import urllib.parse
+import attr
 
 from .artifact import OpenwrtArtifact
 from .source import OpenwrtSource
 from .operation import OpenwrtOperation
 
-class UpenwrtContext:
-	def __init__(self, *, basedir, baseurl):
-		self.basedir = basedir
-		self.staticdir = p.join(self.basedir, 'static')
-		self.cachedir = p.join(self.basedir, 'cache')
-		self.workdir = p.join(self.basedir, 'work')
-		self.repodir = p.join(self.basedir, 'repo')
 
-		self.baseurl = baseurl
+@attr.s(kw_only=True)
+class UpenwrtContext:
+	basedir = attr.ib()
+	staticdir = attr.ib()
+	cachedir = attr.ib()
+	workdir = attr.ib()
+	repodir = attr.ib()
+	baseurl = attr.ib()
+	baseurlpath = attr.ib()
+
+	@staticmethod
+	def from_args(*, basedir, baseurl):
 		baseparsed = urllib.parse.urlparse(baseurl)
-		self.baseurlpath = baseparsed.path or '/'
+		# noinspection PyArgumentList
+		return UpenwrtContext(
+			basedir=basedir,
+			staticdir=p.join(basedir, 'static'),
+			cachedir=p.join(basedir, 'cache'),
+			workdir=p.join(basedir, 'work'),
+			repodir=p.join(basedir, 'repo'),
+			baseurl=baseurl,
+			baseurlpath=baseparsed.path or '/',
+		)
 
 
 class UpenwrtHTTPServer(http.server.HTTPServer):

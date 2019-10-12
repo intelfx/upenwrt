@@ -16,7 +16,7 @@ def main():
 	args = parser.parse_args()
 
 	httpd_address = (args.listen, args.port)
-	httpd_context = UpenwrtContext(
+	httpd_context = UpenwrtContext.from_args(
 		basedir=p.join(os.getcwd(), args.basedir),
 		baseurl=args.baseurl,
 	)
