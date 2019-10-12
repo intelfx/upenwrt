@@ -19,7 +19,7 @@ class UpenwrtContext:
 
 		self.baseurl = baseurl
 		baseparsed = urllib.parse.urlparse(baseurl)
-		self.baseurlpath = baseparsed.path
+		self.baseurlpath = baseparsed.path or '/'
 
 
 class UpenwrtHTTPServer(http.server.HTTPServer):
