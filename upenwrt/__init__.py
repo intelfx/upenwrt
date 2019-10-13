@@ -7,13 +7,13 @@ import argparse
 from .server import UpenwrtHTTPServer, UpenwrtContext, UpenwrtHTTPRequestHandler
 
 
-def main():
+def main(argv=None):
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-l', '--listen', default='0.0.0.0')
 	parser.add_argument('-p', '--port', type=int, default=8000)
 	parser.add_argument('-d', '--basedir', default='')
 	parser.add_argument('-b', '--baseurl', default='http://localhost:8000')
-	args = parser.parse_args()
+	args = parser.parse_args(args=argv)
 
 	httpd_address = (args.listen, args.port)
 	httpd_context = UpenwrtContext.from_args(
