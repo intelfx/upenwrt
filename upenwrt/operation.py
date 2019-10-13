@@ -82,6 +82,7 @@ class OpenwrtOperation:
 		print(f'packages in default only (user removed!): {default_only_packages}')
 		print(f'packages in user only (user installed!): {user_only_packages}')
 
+		# noinspection PyArgumentList
 		return OpenwrtOperationDetails(
 			builddir=builddir,
 			profile=bld_profile,

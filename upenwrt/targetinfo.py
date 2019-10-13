@@ -72,9 +72,10 @@ class OpenwrtTargetinfo:
 			# parse separator
 			if line == '@@':
 				if {'profile'} <= section.keys():
+					# noinspection PyArgumentList
 					profile = OpenwrtProfile(
 						name=section['profile'],
-						target=last_target, # NOTE: stateful format!
+						target=last_target,  # NOTE: stateful format!
 						devices=section.get('profile_devices', []),
 						packages=section.get('profile_packages', []),
 					)
@@ -83,6 +84,7 @@ class OpenwrtTargetinfo:
 						profiles[d] = profile
 					profiles[profile.name] = profile
 				elif {'target'} <= section.keys():
+					# noinspection PyArgumentList
 					target = OpenwrtTarget(
 						name=section['target'],
 						packages=section.get('target_packages', []),

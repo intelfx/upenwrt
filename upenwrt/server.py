@@ -1,14 +1,10 @@
 #!/hint/python3
 
 import os
-import sys
 import os.path as p
 import http.server
 import urllib.parse
-import shutil
-import traceback
 
-from . import util
 from .artifact import OpenwrtArtifact
 from .source import OpenwrtSource
 from .operation import OpenwrtOperation

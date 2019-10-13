@@ -46,7 +46,7 @@ class OpenwrtArtifact:
 
 		target_path = tempfile.mkdtemp(dir=target_dir, prefix='imagebuilder')
 		untar_imagebuilder = util.run(
-			[ 'tar' , '-xaf', self.imagebuilder_file ],
+			[ 'tar', '-xaf', self.imagebuilder_file ],
 			cwd=target_path,
 		)
 
