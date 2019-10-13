@@ -161,8 +161,12 @@ log_choice PACKAGES
 
 # determine base URL
 BASE_URL="@BASE_URL@"
-BASE_URL_reason='hardcode'
+BASE_URL_reason='server-passed'
 log_choice BASE_URL
+
+API_ARGS="@API_ARGS@"
+API_ARGS_reason='server-passed'
+log_choice API_ARGS
 
 # determine target release
 if test -n "$1"; then
@@ -183,7 +187,7 @@ CURL="$CURL -d 'board_name=$BOARD_NAME'"
 CURL="$CURL -d 'current_release=$RELEASE'"
 CURL="$CURL -d 'current_revision=$REVISION'"
 CURL="$CURL -d 'target_version=$TARGET'"
-CURL="$CURL @API_ARGS@"
+CURL="$CURL $API_ARGS"
 for p in $PACKAGES; do
 	CURL="$CURL -d 'pkgs=$p'"
 done
