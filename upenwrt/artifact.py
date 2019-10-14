@@ -35,17 +35,17 @@ class OpenwrtArtifact:
 		self.imagebuilder_file = None
 		self.targetinfo = None
 
-	def get_imagebuilder(self, target_dir):
+	async def get_imagebuilder(self, target_dir):
 		if not self.imagebuilder_file:
 			imagebuilder_name = self.openwrt_imagebuilder_name()
 			imagebuilder_url = f'{self.base_url}/{imagebuilder_name}'
 			imagebuilder_file = p.join(self.context.cachedir, imagebuilder_name)
-			util.get_file(imagebuilder_url, dest=imagebuilder_file)
+			await util.get_file(imagebuilder_url, dest=imagebuilder_file)
 
 			self.imagebuilder_file = imagebuilder_file
 
 		target_path = tempfile.mkdtemp(dir=target_dir, prefix='imagebuilder')
-		untar_imagebuilder = util.run(
+		untar_imagebuilder = await util.run(
 			[ 'tar', '-xaf', self.imagebuilder_file ],
 			cwd=target_path,
 		)
@@ -56,7 +56,7 @@ class OpenwrtArtifact:
 
 		return p.join(target_path, filelist[0])
 
-	def get_targetinfo(self, imagebuilder_dir):
+	async def get_targetinfo(self, imagebuilder_dir):
 		if self.targetinfo is None:
 			self.targetinfo = OpenwrtTargetinfo(p.join(imagebuilder_dir, '.targetinfo'))
 		return self.targetinfo

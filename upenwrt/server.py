@@ -139,18 +139,18 @@ class UpenwrtHandler:
 		)
 
 		if mode == 'build':
-			with op:
-				output = op.build()
+			async with op:
+				output = await op.build()
 
 				async with aiofiles.open(output, 'rb') as f:
 					# we have already opened the output, release resources
 					# (i. e. remove the working directory)
-					op.__exit__()
+					await op.__aexit__()
 					return await self.response_stream_file(request=request, fobj=f)
 
 		elif mode == 'list':
-			with op:
-				output = op.list_packages()
+			async with op:
+				output = await op.list_packages()
 
 			return aiohttp.web.Response(text=output)
 

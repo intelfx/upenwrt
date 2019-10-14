@@ -16,7 +16,7 @@ def parse_last_modified(s):
 	return calendar.timegm(time.strptime(s, '%a, %d %b %Y %H:%M:%S GMT'))
 
 
-def get_file(url, *args, dest, headers=None, **kwargs):
+async def get_file(url, *args, dest, headers=None, **kwargs):
 	headers = headers or {}
 
 	try:
@@ -50,7 +50,7 @@ def get_file(url, *args, dest, headers=None, **kwargs):
 		return r
 
 
-def run(*args, **kwargs):
+async def run(*args, **kwargs):
 	run_kwargs = {
 		'text': True,
 		'check': True,

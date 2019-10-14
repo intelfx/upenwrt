@@ -27,33 +27,33 @@ class OpenwrtOperation:
 		self.packages = set(pkgs)
 		self.workdir = None
 
-	def __enter__(self):
+	async def __aenter__(self):
 		if not self.workdir:
 			self.workdir = tempfile.mkdtemp(dir=self.context.workdir)
 
-	def __exit__(self, *args, **kwargs):
+	async def __aexit__(self, *args, **kwargs):
 		if self.workdir:
 			shutil.rmtree(self.workdir)
 			self.workdir = None
 
-	def prepare(self):
+	async def prepare(self):
 		assert(self.workdir)
 		print(f'workdir: {self.workdir}')
 		print(f'target: {self.target_name}')
 		print(f'board: {self.board_name}')
 
-		builddir = self.artifact.get_imagebuilder(self.workdir)
+		builddir = await self.artifact.get_imagebuilder(self.workdir)
 		print(f'builddir: {builddir}')
 
-		bld_targetinfo = self.artifact.get_targetinfo(builddir)
+		bld_targetinfo = await self.artifact.get_targetinfo(builddir)
 		bld_profile = bld_targetinfo.profiles[self.board_name]
 		print(f'desired profile: {bld_profile}')
 
 		if self.source:
-			sourcedir = self.source.get_checkout(self.workdir)
+			sourcedir = await self.source.get_checkout(self.workdir)
 			print(f'sourcedir: {sourcedir}')
 
-			src_targetinfo = self.source.get_targetinfo(sourcedir)
+			src_targetinfo = await self.source.get_targetinfo(sourcedir)
 			src_target = src_targetinfo.targets[self.target_name]
 			print(f'existing target: {src_target}')
 			src_profile = src_targetinfo.profiles[self.board_name]
@@ -90,15 +90,15 @@ class OpenwrtOperation:
 			packages=user_only_packages,
 		)
 
-	def list_packages(self):
-		prep = self.prepare()
+	async def list_packages(self):
+		prep = await self.prepare()
 
 		return ' '.join(prep.packages)
 
-	def build(self):
-		prep = self.prepare()
+	async def build(self):
+		prep = await self.prepare()
 
-		make_image = util.run(
+		make_image = await util.run(
 			[ 'make', 'image', f'PROFILE={prep.profile.name}', f'PACKAGES={" ".join(prep.packages)}' ],
 			cwd=prep.builddir,
 		)

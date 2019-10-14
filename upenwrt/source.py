@@ -28,39 +28,39 @@ class OpenwrtSource:
 		self.ref = OpenwrtSource.parse_ref(release=release, revision=revision)
 		self.targetinfo = None
 
-	def get_checkout(self, target_dir):
+	async def get_checkout(self, target_dir):
 		repo_path = p.join(self.context.repodir, 'openwrt.git')
 		target_path = tempfile.mkdtemp(dir=target_dir, prefix='worktree')
-		git_clone = util.run(
+		git_clone = await util.run(
 			[ 'git', 'clone', '--no-checkout', repo_path, target_path ],
 			cwd=target_dir,
 		)
-		git_checkout = util.run(
+		git_checkout = await util.run(
 			[ 'git', 'checkout', '--force', self.ref ],
 			cwd=target_path,
 		)
 		# Apply specific patches to the buildsystem that help us to (ab)use it in the way we want
 		patchdir = p.join(self.context.staticdir, 'patches')
 		for f in sorted(os.listdir(patchdir)):
-			git_am = util.run(
+			git_am = await util.run(
 				[ 'git', 'am', '-3', p.join(patchdir, f) ],
 				cwd=target_path,
 			)
 		return target_path
 
-	def _make_targetinfo(self, source_dir):
+	async def _make_targetinfo(self, source_dir):
 		if self.target_name.count('/') != 1:
 			raise ValueError(f'OpenwrtSource: bad board name: {self.target_name} (expected exactly 1 slash)')
 		board_arch, board_soc = p.split(self.target_name)
 		targetinfo_path = p.join(source_dir, 'tmp', 'info', f'.targetinfo-{board_arch}')
 		if not p.exists(targetinfo_path):
-			make_tmpinfo = util.run(
+			make_tmpinfo = await util.run(
 				[ 'make', 'prepare-tmpinfo' ],
 				cwd=source_dir,
 			)
 		return targetinfo_path
 
-	def get_targetinfo(self, source_dir):
+	async def get_targetinfo(self, source_dir):
 		if self.targetinfo is None:
-			self.targetinfo = OpenwrtTargetinfo(self._make_targetinfo(source_dir))
+			self.targetinfo = OpenwrtTargetinfo(await self._make_targetinfo(source_dir))
 		return self.targetinfo
