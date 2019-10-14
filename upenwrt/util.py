@@ -1,12 +1,14 @@
 #!/hint/python3
 
 import os
+import sys
 import os.path as p
 import logging
 import time
 import calendar
 import subprocess
 import requests
+import asyncio
 
 
 def configure_logging(*, prefix, debug):
@@ -69,12 +71,35 @@ async def get_file(url, *args, dest, headers=None, **kwargs):
 
 async def run(args, **kwargs):
 	run_kwargs = {
-		'text': True,
-		'check': True,
-		'stdin': subprocess.DEVNULL,
-		'stdout': None,
-		'stderr': None,
+		'stdin': asyncio.subprocess.DEVNULL,
+		'stdout': asyncio.subprocess.PIPE,
+		'stderr': asyncio.subprocess.STDOUT,
 	}
 	run_kwargs.update(kwargs)
 
-	return subprocess.run(args, **run_kwargs)
+	process = await asyncio.create_subprocess_exec(
+		*args,
+		**run_kwargs,
+	)
+	logging.debug(f'run({args}): [{process.pid}] started')
+
+	stdout = []
+	while True:
+		line = await process.stdout.readline()
+		if not line:
+			break
+		line = line.decode('utf-8').rstrip('\n')
+		stdout.append(line)
+		logging.debug(f'[{process.pid}]: {line}')
+
+	await process.wait()
+	logging.debug(f'run({args}): [{process.pid}] exited with code {process.returncode}')
+
+	if process.returncode != 0:
+		raise subprocess.CalledProcessError(
+			returncode=process.returncode,
+			cmd=args,
+			output='\n'.join(stdout),
+			stderr=None,
+		)
+	return process
