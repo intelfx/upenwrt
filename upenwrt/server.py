@@ -85,25 +85,16 @@ class UpenwrtHandler:
 		return await self.response_template_file(request=request, file='README.txt', replacements=replacements)
 
 
-	async def handle_get_sh(self, request: aiohttp.web.Request):
+	async def handle_get_sh(self, request: aiohttp.web.Request, api: str):
 		replacements = {
 			'BASE_URL': self.context.baseurl,
-			'API_ARGS': '',
+			'API_ENDPOINT': api,
 		}
 		print(f'GET /get')
 		return await self.response_template_file(request=request, file='get.sh', replacements=replacements)
 
 
-	async def handle_list_sh(self, request: aiohttp.web.Request):
-		replacements = {
-			'BASE_URL': self.context.baseurl,
-			'API_ARGS': "-d 'mode=list'",
-		}
-		print(f'GET /list')
-		return await self.response_template_file(request=request, file='get.sh', replacements=replacements)
-
-
-	async def handle_api_get(self, request: aiohttp.web.Request):
+	async def api_prepare_operation(self, request: aiohttp.web.Request):
 		args = request.query
 		print(f'GET /api/get({args})')
 
@@ -114,7 +105,6 @@ class UpenwrtHandler:
 		current_revision = args.get('current_revision', None)
 		target_version = args.get('target_version', 'snapshot')
 		pkgs = args.getall('pkgs', [])
-		mode = args.get('mode', 'build')
 
 		artifact = OpenwrtArtifact(
 			context=self.context,
@@ -138,33 +128,42 @@ class UpenwrtHandler:
 			pkgs=pkgs,
 		)
 
-		if mode == 'build':
-			async with op:
-				output = await op.build()
+		return op
 
-				async with aiofiles.open(output, 'rb') as f:
-					# we have already opened the output, release resources
-					# (i. e. remove the working directory)
-					await op.__aexit__()
-					return await self.response_stream_file(request=request, fobj=f)
 
-		elif mode == 'list':
-			async with op:
-				output = await op.list_packages()
+	async def handle_api_build(self, request: aiohttp.web.Request):
+		op = await self.api_prepare_operation(request=request)
+		async with op:
+			output = await op.build()
 
-			return aiohttp.web.Response(text=output)
+			async with aiofiles.open(output, 'rb') as f:
+				# we have already opened the output, release resources
+				# (i. e. remove the working directory)
+				await op.__aexit__()
+				return await self.response_stream_file(request=request, fobj=f)
 
-		else:
-			raise ValueError(f'Bad mode: {mode}, expected "build" or "list"')
+
+	async def handle_api_list(self, request: aiohttp.web.Request):
+		op = await self.api_prepare_operation(request=request)
+		async with op:
+			output = await op.list_packages()
+
+		return aiohttp.web.Response(text=output)
 
 
 	def routes(self):
+		ResponseCoroutine = Coroutine[Any, Any, aiohttp.web.Response]
+
+		def H(c: Callable[..., ResponseCoroutine], *args, **kwargs) -> Callable[[aiohttp.web.Request], ResponseCoroutine]:
+			return lambda request: c(request, *args, **kwargs)
+
 		base = self.context.baseurlpath
 		return [
 			aiohttp.web.get(p.join(base, ''), self.handle_get_readme),
-			aiohttp.web.get(p.join(base, 'get'), self.handle_get_sh),
-			aiohttp.web.get(p.join(base, 'list'), self.handle_list_sh),
-			aiohttp.web.get(p.join(base, 'api/get'), self.handle_api_get, allow_head=False),
+			aiohttp.web.get(p.join(base, 'get'), H(self.handle_get_sh, api='build')),
+			aiohttp.web.get(p.join(base, 'list'), H(self.handle_get_sh, api='list')),
+			aiohttp.web.get(p.join(base, 'api/build'), self.handle_api_build, allow_head=False),
+			aiohttp.web.get(p.join(base, 'api/list'), self.handle_api_list, allow_head=False),
 		]
 
 

@@ -164,9 +164,9 @@ BASE_URL="@BASE_URL@"
 BASE_URL_reason='server-passed'
 log_choice BASE_URL
 
-API_ARGS="@API_ARGS@"
-API_ARGS_reason='server-passed'
-log_choice API_ARGS
+API_ENDPOINT="@API_ENDPOINT@"
+API_ENDPOINT_reason='server-passed'
+log_choice API_ENDPOINT
 
 # determine target release
 if test -n "$1"; then
@@ -179,7 +179,7 @@ fi
 log_choice TARGET
 
 # generate CURL call
-URL="$BASE_URL/api/get"
+URL="$BASE_URL/api/$API_ENDPOINT"
 CURL="curl '$URL'"
 CURL="$CURL -G"
 CURL="$CURL -d 'target_name=$TARGET_NAME'"
@@ -187,7 +187,6 @@ CURL="$CURL -d 'board_name=$BOARD_NAME'"
 CURL="$CURL -d 'current_release=$RELEASE'"
 CURL="$CURL -d 'current_revision=$REVISION'"
 CURL="$CURL -d 'target_version=$TARGET'"
-CURL="$CURL $API_ARGS"
 for p in $PACKAGES; do
 	CURL="$CURL -d 'pkgs=$p'"
 done
