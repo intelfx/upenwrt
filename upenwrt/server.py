@@ -1,6 +1,7 @@
 #!/hint/python3
 
 import os
+import sys
 import os.path as p
 import logging
 import asyncio
@@ -9,6 +10,8 @@ import aiofiles.os
 import aiohttp.web
 import urllib.parse
 import attr
+import subprocess
+import traceback
 from typing import *
 
 from .artifact import OpenwrtArtifact
@@ -153,19 +156,49 @@ class UpenwrtHandler:
 		return aiohttp.web.Response(text=output)
 
 
+	@staticmethod
+	def handle_error(factory, text=None):
+		e = sys.exc_info()
+		traceback.print_exception(*e)
+
+		trace = "".join(traceback.format_exception(*e))
+		if text is not None:
+			body = f'{text.rstrip()}\n\n{trace}'
+		else:
+			body = trace
+
+		raise factory(body=body)
+
+
+	ResponseCoroutine = Coroutine[Any, Any, aiohttp.web.Response]
+
+
+	@staticmethod
+	def wrap(handler: Callable[..., ResponseCoroutine], *args, **kwargs) -> Callable[[aiohttp.web.Request], ResponseCoroutine]:
+		async def wrapped(request: aiohttp.web.Request):
+			try:
+				return await handler(request, *args, **kwargs)
+			except subprocess.CalledProcessError as e:
+				UpenwrtHandler.handle_error(
+					factory=aiohttp.web.HTTPInternalServerError,
+					text=e.stdout,
+				)
+			except Exception as e:
+				UpenwrtHandler.handle_error(
+					factory=aiohttp.web.HTTPInternalServerError,
+				)
+		return wrapped
+
+
 	def routes(self):
-		ResponseCoroutine = Coroutine[Any, Any, aiohttp.web.Response]
-
-		def H(c: Callable[..., ResponseCoroutine], *args, **kwargs) -> Callable[[aiohttp.web.Request], ResponseCoroutine]:
-			return lambda request: c(request, *args, **kwargs)
-
+		H = UpenwrtHandler.wrap
 		base = self.context.baseurlpath
 		return [
-			aiohttp.web.get(p.join(base, ''), self.handle_get_readme),
+			aiohttp.web.get(p.join(base, ''), H(self.handle_get_readme)),
 			aiohttp.web.get(p.join(base, 'get'), H(self.handle_get_sh, api='build')),
 			aiohttp.web.get(p.join(base, 'list'), H(self.handle_get_sh, api='list')),
-			aiohttp.web.get(p.join(base, 'api/build'), self.handle_api_build, allow_head=False),
-			aiohttp.web.get(p.join(base, 'api/list'), self.handle_api_list, allow_head=False),
+			aiohttp.web.get(p.join(base, 'api/build'), H(self.handle_api_build), allow_head=False),
+			aiohttp.web.get(p.join(base, 'api/list'), H(self.handle_api_list), allow_head=False),
 		]
 
 
