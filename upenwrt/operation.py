@@ -34,6 +34,7 @@ class OpenwrtOperation:
 	def __exit__(self, *args, **kwargs):
 		if self.workdir:
 			shutil.rmtree(self.workdir)
+			self.workdir = None
 
 	def prepare(self):
 		assert(self.workdir)
