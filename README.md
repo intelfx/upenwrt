@@ -15,7 +15,7 @@ on non-default packages for Internet connectivity.
 Assuming that the daemon is reachable at <http://upenwrt:8000>:
 
 ```
-curl http://upenwrt:8000 | sh > /tmp/sysupgrade.img
+curl http://upenwrt:8000/get | sh > /tmp/sysupgrade.img
 sysupgrade -v /tmp/sysupgrade.img
 ```
 
@@ -25,18 +25,22 @@ Files read by the script:
 * `/tmp/sysinfo/board_name`
 * `/usr/lib/opkg/status`
 
-Environment variables (optionally) used by the script:
+Command-line arguments and environment variables used by the script:
 
-* `$TARGET_NAME`: OpenWRT target name, e. g. `ramips/mt7621` (overrides `$DISTRIB_TARGET` of `/etc/openwrt_release`)
-* `$BOARD_NAME`: OpenWRT board name or profile name, e. g. `xiaomi,mir3g` or `mir3g` (overrides `/tmp/sysinfo/board_name`)
-* `$RELEASE`: current (installed) OpenWRT release, e. g. `snapshot` (overrides `$DISTRIB_RELEASE` of `/etc/openwrt_release`)
-* `$REVISION`: current (installed) OpenWRT revision, e. g. `r10574-273b803623` (overrides `$DISTRIB_REVISION` of `/etc/openwrt_release`)
-* `$PACKAGES`: list of packages to install into the image, space-separated (overrides `/usr/lib/opkg/status`)
+| Command-line argument                 | Environment variable        | Description                                                                     | Default                                                 |
+|---------------------------------------|-----------------------------|---------------------------------------------------------------------------------|---------------------------------------------------------|
+| `--hw-target`                         | `$TARGET_NAME`              | OpenWRT target name, e. g. `ramips/mt7621`                                      | overrides `$DISTRIB_TARGET` of `/etc/openwrt_release`   |
+| `--hw-target`                         | `$TARGET_NAME`              | OpenWRT target name, e. g. `ramips/mt7621`                                      | overrides `$DISTRIB_TARGET` of `/etc/openwrt_release`   |
+| `--hw-board`                          | `$BOARD_NAME`               | OpenWRT board name or profile name, e. g. `xiaomi,mir3g` or `mir3g`             | overrides `/tmp/sysinfo/board_name`                     |
+| `--current-release`                   | `$RELEASE`                  | current (installed) OpenWRT release, e. g. `SNAPSHOT`                           | overrides `$DISTRIB_RELEASE` of `/etc/openwrt_release`  |
+| `--current-revision`                  | `$REVISION`                 | current (installed) OpenWRT revision, e. g. `r10574-273b803623`                 | overrides `$DISTRIB_REVISION` of `/etc/openwrt_release` |
+| `--packages`                          | `$PACKAGES`                 | list of packages to install into the image, space-separated                     | overrides `/usr/lib/opkg/status`                        |
+| `--packages-add`, `--packages-remove` | `$PKGS_ADD`, `$PKGS_REMOVE` | lists of packages to add/ignore when installing into the image, space-separated | none (supplements `/usr/lib/opkg/status`)               |
 
 # description
 
-`upenwrt` is implemented as a (simple) HTTP server daemon that serves a script
-(`/get.sh`) and a single API endpoint (`/api/get`).
+`upenwrt` is implemented as a (simple) HTTP server daemon that serves a help
+page (`/`), a script (`/get`) and an API endpoint (`/api/get`).
 
 The script must be executed on the target device (presumably in the infamous
 `curl | sh` pattern) and will collect user-installed package lists and other
@@ -68,7 +72,8 @@ cp -r root/static -T /var/lib/upenwrt/static
 mkdir -p /var/lib/upenwrt/repo; git clone --bare https://git.openwrt.org/openwrt/openwrt.git /var/lib/upenwrt/repo/openwrt.git
 mkdir -p /var/lib/upenwrt/cache
 mkdir -p /var/lib/upenwrt/work; mount tmpfs -t tmpfs /var/lib/upenwrt/work
-./upenwrt.py --rootdir /var/lib/upenwrt --baseurl http://upenwrt:8000 --listen '0.0.0.0' --port 8000
+
+python -m upenwrt --rootdir /var/lib/upenwrt --baseurl http://upenwrt:8000 --listen '0.0.0.0' --port 8000
 ```
 
 [2]: https://git.openwrt.org/openwrt/openwrt.git

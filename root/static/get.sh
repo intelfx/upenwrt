@@ -2,6 +2,11 @@
 
 set -e
 
+
+#
+# functions
+#
+
 log() {
 	echo ":: $*" >&2
 }
@@ -23,6 +28,7 @@ function log_choice() {
 	local name="$1"
 	local value="$(eval "echo \"\${${name}}\"")"
 	local reason="$(eval "echo \"\${${name}_reason}\"")"
+	if test -z "$reason"; then reason="override"; fi
 	log "\$$name='$value' ($reason)"
 }
 
@@ -81,9 +87,92 @@ opkg_get_user() {
 	rm -f "$pkgs_0" "$pkgs_1" "$pkgs_2" "$pkgs_add" "$pkgs_remove"
 }
 
+
+#
+# main
+#
+
+# parse arguments
+# openwrt does not have getopt(1) -- sunrise by hand
+while test "$#" -ne 0; do
+	# fetch arg
+	arg="$1"
+
+	# try to split arg by =
+	name="${arg%%=*}"
+	value="${arg#*=}"
+	hasvalue=1
+	if test "$arg" == "$name"; then value=""; hasvalue=0; fi
+
+	case "$name" in
+	--hw-target)
+		var=TARGET_NAME
+		needvalue=1
+		;;
+	--hw-board)
+		var=BOARD_NAME
+		needvalue=1
+		;;
+	--current-release)
+		var=RELEASE
+		needvalue=1
+		;;
+	--current-revision)
+		var=REVISION
+		needvalue=1
+		;;
+	-P|--packages)
+		var=PACKAGES
+		needvalue=1
+		;;
+	-A|--packages-add)
+		var=PKGS_ADD
+		needvalue=1
+		;;
+	-S|--packages-remove)
+		var=PKGS_REMOVE
+		needvalue=1
+		;;
+	-T|--target)
+		var=TARGET
+		needvalue=1
+		;;
+	--)
+		# exit with consuming
+		shift
+		break
+		;;
+	-*)
+		die "bad argument: '$arg' is not a valid argument"
+		;;
+	*)
+		# exit without consuming
+		break
+		;;
+	esac
+	shift
+
+	if test "$needvalue" -eq 0; then
+		# if we don't expect a value and one has been provided via =, it's an error
+		if test "$hasvalue" -ne 0; then die "bad argument: '$arg' does not expect a value"; fi
+		value=1
+	elif test "$hasvalue" -eq 0; then
+		# if we expect a value and one hasn't been provided via =, consume next argument
+		if test "$#" -eq 0; then die "bad argument: '$arg' expects a value, but there is none"; fi
+		value="$1"
+		shift
+	fi
+	eval "${var}='${value}'"
+	eval "${var}_reason='command line'"
+done
+
+if test "$#" -ne 0; then
+	die "bad argument: excess arguments: $*"
+fi
+
 # determine board path
 if test -n "$TARGET_NAME"; then
-	TARGET_NAME_reason=override
+	:
 elif test -f /etc/openwrt_release; then
 	. /etc/openwrt_release
 	test -n "$DISTRIB_TARGET" || die "\$DISTRIB_TARGET not present in /etc/openwrt_release, exiting"
@@ -96,7 +185,7 @@ log_choice TARGET_NAME
 
 # determine board name
 if test -n "$BOARD_NAME"; then
-	BOARD_NAME_reason="override"
+	:
 elif test -f /tmp/sysinfo/board_name; then
 	BOARD_NAME="$(cat /tmp/sysinfo/board_name)"
 	BOARD_NAME_reason="/tmp/sysinfo/board_name"
@@ -107,7 +196,7 @@ log_choice BOARD_NAME
 
 # determine current release & revision
 if test -n "$RELEASE"; then
-	RELEASE_reason="override"
+	:
 elif test -n /etc/openwrt_release; then
 	. /etc/openwrt_release
 	test -n "$DISTRIB_RELEASE" || die "\$DISTRIB_RELEASE not present in /etc/openwrt_release, exiting"
@@ -119,7 +208,7 @@ fi
 log_choice RELEASE
 
 if test -n "$REVISION"; then
-	REVISION_reason="override"
+	:
 elif test -n /etc/openwrt_release; then
 	. /etc/openwrt_release
 	test -n "$DISTRIB_REVISION" || die "\$DISTRIB_REVISION not present in /etc/openwrt_release, exiting"
@@ -133,18 +222,16 @@ log_choice REVISION
 
 # determine packages partial overrides
 if test -n "$PKGS_ADD"; then
-	PKGS_ADD_reason=override
 	log_choice PKGS_ADD
 fi
 
 if test -n "$PKGS_REMOVE"; then
-	PKGS_REMOVE_reason=override
 	log_choice PKGS_REMOVE
 fi
 
 # determine user-installed packages
 if test -n "$PACKAGES"; then
-	PACKAGES_reason="override"
+	:
 else
 	if test -n "$OPKG_STATUS"; then
 		OPKG_STATUS_reason="override"
@@ -169,12 +256,11 @@ API_ENDPOINT_reason='server-passed'
 log_choice API_ENDPOINT
 
 # determine target release
-if test -n "$1"; then
-	TARGET="$1"
-	TARGET_reason="\$1"
+if test -n "$TARGET"; then
+	:
 else
 	TARGET="snapshot"
-	TARGET_reason='hardcode'
+	TARGET_reason='default'
 fi
 log_choice TARGET
 
