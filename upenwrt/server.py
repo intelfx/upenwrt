@@ -56,6 +56,25 @@ class UpenwrtHandler:
 		return response
 
 
+	async def response_stream_file(self, request: aiohttp.web.Request, fobj):
+		st = os.stat(fobj.fileno())
+
+		resp = aiohttp.web.StreamResponse()
+		resp.content_type = 'application/octet-stream'
+		resp.content_length = st.st_size
+		resp.last_modified = st.st_mtime
+		await resp.prepare(request)
+
+		sz = 256 * 1024
+		while True:
+			chunk = fobj.read(sz)
+			if not chunk:
+				break
+			await resp.write(chunk)
+
+		return resp
+
+
 	async def handle_get_readme(self, request: aiohttp.web.Request):
 		replacements = {
 			'BASE_URL': self.context.baseurl
@@ -123,22 +142,7 @@ class UpenwrtHandler:
 				f = open(output, 'rb')
 
 			with f:
-				st = os.stat(f.fileno())
-
-				resp = aiohttp.web.StreamResponse()
-				resp.content_type = 'application/octet-stream'
-				resp.content_length = st.st_size
-				resp.last_modified = st.st_mtime
-				await resp.prepare(request)
-
-				sz = 256*1024
-				while True:
-					chunk = f.read(sz)
-					if not chunk:
-						break
-					await resp.write(chunk)
-
-				return resp
+				return await self.response_stream_file(request=request, fobj=f)
 
 		elif mode == 'list':
 			with op:
