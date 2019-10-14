@@ -2,6 +2,7 @@
 
 import os
 import os.path as p
+import logging
 import tempfile
 import shutil
 import attr
@@ -38,50 +39,52 @@ class OpenwrtOperation:
 
 	async def prepare(self):
 		assert(self.workdir)
-		print(f'workdir: {self.workdir}')
-		print(f'target: {self.target_name}')
-		print(f'board: {self.board_name}')
+		logging.info(f'OpenwrtOperation: prepare(): target name: {self.target_name}')
+		logging.info(f'OpenwrtOperation: prepare(): board name: {self.board_name}')
+		logging.debug(f'OpenwrtOperation: prepare(): workdir at: {self.workdir}')
 
 		builddir = await self.artifact.get_imagebuilder(self.workdir)
-		print(f'builddir: {builddir}')
+		logging.debug(f'OpenwrtOperation: prepare(): builddir at: {builddir}')
 
 		bld_targetinfo = await self.artifact.get_targetinfo(builddir)
 		bld_profile = bld_targetinfo.profiles[self.board_name]
-		print(f'desired profile: {bld_profile}')
+		logging.debug(f'OpenwrtOperation: prepare(): builder profile: {bld_profile}')
 
 		if self.source:
 			sourcedir = await self.source.get_checkout(self.workdir)
-			print(f'sourcedir: {sourcedir}')
+			logging.debug(f'OpenwrtOperation: prepare(): sourcedir at: {sourcedir}')
 
 			src_targetinfo = await self.source.get_targetinfo(sourcedir)
 			src_target = src_targetinfo.targets[self.target_name]
-			print(f'existing target: {src_target}')
+			logging.debug(f'OpenwrtOperation: prepare(): source target: {src_target}')
 			src_profile = src_targetinfo.profiles[self.board_name]
-			print(f'existing profile: {src_profile}')
+			logging.debug(f'OpenwrtOperation: prepare(): source profile: {src_profile}')
 			default_target_packages = set(src_target.packages)
 			default_profile_packages = set(src_profile.packages)
 		else:
-			print('No source -- not subtracting default packages!')
+			logging.warning(f'OpenwrtOperation: prepare(): no source -- not subtracting default packages!')
 			default_target_packages = set()
 			default_profile_packages = set()
 
-		print(f'default packages in target: {default_target_packages}')
-		print(f'default packages in profile: {default_profile_packages}')
+		logging.debug(f'OpenwrtOperation: prepare(): per-target defaults: {default_target_packages}')
+		logging.debug(f'OpenwrtOperation: prepare(): per-profile defaults: {default_profile_packages}')
 
 		default_target_only_packages = default_target_packages - default_profile_packages
 		default_profile_only_packages = default_profile_packages - default_target_packages
-		print(f'default packages in target only: {default_target_only_packages}')
-		print(f'default packages in profile only: {default_profile_only_packages}')
+		default_both_packages = default_target_packages & default_profile_packages
+		logging.debug(f'OpenwrtOperation: prepare(): note: excl. per-target defaults: {default_target_only_packages}')
+		logging.debug(f'OpenwrtOperation: prepare(): note: excl. per-profile defaults: {default_profile_only_packages}')
+		logging.debug(f'OpenwrtOperation: prepare(): note: common defaults: {default_both_packages}')
 
 		default_packages = default_target_packages | default_profile_packages
-		print(f'default packages: {default_packages}')
+		logging.info(f'OpenwrtOperation: prepare(): client defaults: {default_packages}')
 		packages = self.packages
-		print(f'passed packages: {packages}')
+		logging.info(f'OpenwrtOperation: prepare(): client packages: {packages}')
 
 		default_only_packages = default_packages - packages
 		user_only_packages = packages - default_packages
-		print(f'packages in default only (user removed!): {default_only_packages}')
-		print(f'packages in user only (user installed!): {user_only_packages}')
+		logging.info(f'OpenwrtOperation: prepare(): client REMOVED: {default_only_packages}')
+		logging.info(f'OpenwrtOperation: prepare(): client INSTALLED: {user_only_packages}')
 
 		# noinspection PyArgumentList
 		return OpenwrtOperationDetails(
@@ -104,12 +107,12 @@ class OpenwrtOperation:
 		)
 
 		outdir = p.join(prep.builddir, 'bin', 'targets', self.artifact.target_name)
-		print(f'outdir: {outdir}')
+		logging.debug(f'OpenwrtOperation: build(): outdir at: {outdir}')
 		filelist = os.listdir(outdir)
-		print(f'outdir files: {filelist}')
+		logging.debug(f'OpenwrtOperation: build(): outputs: {filelist}')
 
 		outputs = [ x for x in filelist if 'sysupgrade' in x ]
 		if len(outputs) != 1:
-			raise RuntimeError(f'Got {len(outputs)} !+ 1 sysupgrade outputs after building: {outputs}')
+			raise RuntimeError(f'OpenwrtOperation: got {len(outputs)} != 1 sysupgrade files after building: {outputs}')
 
 		return p.join(outdir, outputs[0])

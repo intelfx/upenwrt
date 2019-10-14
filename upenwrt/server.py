@@ -2,6 +2,7 @@
 
 import os
 import os.path as p
+import logging
 import asyncio
 import aiofiles
 import aiofiles.os
@@ -78,25 +79,26 @@ class UpenwrtHandler:
 
 
 	async def handle_get_readme(self, request: aiohttp.web.Request):
+		logging.info(f'GET {request.rel_url.path}')
 		replacements = {
 			'BASE_URL': self.context.baseurl
 		}
-		print(f'GET /')
 		return await self.response_template_file(request=request, file='README.txt', replacements=replacements)
 
 
 	async def handle_get_sh(self, request: aiohttp.web.Request, api: str):
+		logging.info(f'GET {request.rel_url.path}')
 		replacements = {
 			'BASE_URL': self.context.baseurl,
 			'API_ENDPOINT': api,
 		}
-		print(f'GET /get')
 		return await self.response_template_file(request=request, file='get.sh', replacements=replacements)
 
 
 	async def api_prepare_operation(self, request: aiohttp.web.Request):
+		logging.info(f'GET {request.rel_url.path}(args={request.query})')
+
 		args = request.query
-		print(f'GET /api/get({args})')
 
 		# read arguments from URL query string
 		target_name = args['target_name']

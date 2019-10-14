@@ -1,5 +1,6 @@
 #!/hint/python3
 
+import logging
 import re
 import attr
 
@@ -31,7 +32,7 @@ class OpenwrtTargetinfo:
 		self.targets = dict()
 
 		with open(targetinfo, 'r') as f:
-			print(f'parsing targetinfo at {targetinfo}')
+			logging.debug(f'OpenwrtTargetinfo(f={f.name}): parsing targetinfo')
 			self._parse_targetinfo(f)
 
 	def _parse_targetinfo(self, f):
@@ -79,7 +80,7 @@ class OpenwrtTargetinfo:
 						devices=section.get('profile_devices', []),
 						packages=section.get('profile_packages', []),
 					)
-					print(f'parse_targetinfo(f={f.name}): {profile}')
+					logging.debug(f'OpenwrtTargetinfo(f={f.name}): {profile}')
 					for d in profile.devices:
 						profiles[d] = profile
 					profiles[profile.name] = profile
@@ -89,12 +90,12 @@ class OpenwrtTargetinfo:
 						name=section['target'],
 						packages=section.get('target_packages', []),
 					)
-					print(f'parse_targetinfo(f={f.name}): {target}')
+					logging.debug(f'OpenwrtTargetinfo(f={f.name}): {target}')
 					targets[target.name] = target
 					last_target = target
 				else:
 					section_raw_string = '\n'.join(section_raw)
-					print(f'parse_targetinfo(f={f.name}: strange section:\n{section_raw_string}')
+					logging.debug(f'OpenwrtTargetinfo(f={f.name}: strange section:\n{section_raw_string}')
 
 				section = dict()
 				section_raw = []

@@ -2,6 +2,7 @@
 
 import os
 import os.path as p
+import logging
 import tempfile
 
 from . import util
@@ -52,7 +53,7 @@ class OpenwrtArtifact:
 
 		filelist = os.listdir(target_path)
 		if len(filelist) != 1:
-			raise RuntimeError(f'Got {len(filelist)} != 1 files after unpacking imagebuilder: {filelist}')
+			raise RuntimeError(f'OpenwrtArtifact: got {len(filelist)} != 1 files after unpacking imagebuilder: {filelist}')
 
 		return p.join(target_path, filelist[0])
 
