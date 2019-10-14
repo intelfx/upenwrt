@@ -67,7 +67,7 @@ async def get_file(url, *args, dest, headers=None, **kwargs):
 		return r
 
 
-async def run(*args, **kwargs):
+async def run(args, **kwargs):
 	run_kwargs = {
 		'text': True,
 		'check': True,
@@ -77,4 +77,4 @@ async def run(*args, **kwargs):
 	}
 	run_kwargs.update(kwargs)
 
-	return subprocess.run(*args, **run_kwargs)
+	return subprocess.run(args, **run_kwargs)
