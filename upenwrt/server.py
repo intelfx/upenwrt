@@ -3,6 +3,8 @@
 import os
 import os.path as p
 import asyncio
+import aiofiles
+import aiofiles.os
 import aiohttp.web
 import urllib.parse
 import attr
@@ -44,9 +46,9 @@ class UpenwrtHandler:
 
 
 	async def response_template_file(self, request: aiohttp.web.Request, file, replacements):
-		with open(p.join(self.context.staticdir, file), 'r') as f:
-			st = os.stat(f.fileno())
-			data = f.read()
+		async with aiofiles.open(p.join(self.context.staticdir, file), 'r') as f:
+			st = await aiofiles.os.stat(f.fileno())
+			data = await f.read()
 
 		for k, v in replacements.items():
 			data = data.replace(f'@{k}@', v)
@@ -57,7 +59,7 @@ class UpenwrtHandler:
 
 
 	async def response_stream_file(self, request: aiohttp.web.Request, fobj):
-		st = os.stat(fobj.fileno())
+		st = await aiofiles.os.stat(fobj.fileno())
 
 		resp = aiohttp.web.StreamResponse()
 		resp.content_type = 'application/octet-stream'
@@ -67,7 +69,7 @@ class UpenwrtHandler:
 
 		sz = 256 * 1024
 		while True:
-			chunk = fobj.read(sz)
+			chunk = await fobj.read(sz)
 			if not chunk:
 				break
 			await resp.write(chunk)
@@ -139,10 +141,12 @@ class UpenwrtHandler:
 		if mode == 'build':
 			with op:
 				output = op.build()
-				f = open(output, 'rb')
 
-			with f:
-				return await self.response_stream_file(request=request, fobj=f)
+				async with aiofiles.open(output, 'rb') as f:
+					# we have already opened the output, release resources
+					# (i. e. remove the working directory)
+					op.__exit__()
+					return await self.response_stream_file(request=request, fobj=f)
 
 		elif mode == 'list':
 			with op:
