@@ -203,9 +203,11 @@ eval "$CURL -sSL -w '%{http_code}' -o '$TMP_BODY' >'$TMP_STATUS'"
 STATUS="$(cat "$TMP_STATUS")"
 if [ -n "$STATUS" -a "$STATUS" -ge 200 -a "$STATUS" -lt 400 ]; then
 	cat "$TMP_BODY"
+	if [ -t 1 ]; then echo; fi
 	rc=0
 else
 	cat "$TMP_BODY" >&2
+	if [ -t 2 ]; then echo >&2; fi
 	rc=1
 fi
 
