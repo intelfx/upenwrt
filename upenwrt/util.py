@@ -35,6 +35,14 @@ def parse_last_modified(s):
 	return calendar.timegm(time.strptime(s, '%a, %d %b %Y %H:%M:%S GMT'))
 
 
+async def copy_stream(src, dst, chunk_size=256 * 1024):
+	while True:
+		chunk = await src.read(chunk_size)
+		if not chunk:
+			return
+		await dst.write(chunk)
+
+
 async def get_file(url, *args, dest, headers=None, **kwargs):
 	headers = headers or {}
 

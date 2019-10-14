@@ -14,6 +14,7 @@ import subprocess
 import traceback
 from typing import *
 
+from . import util
 from .artifact import OpenwrtArtifact
 from .source import OpenwrtSource
 from .operation import OpenwrtOperation
@@ -71,12 +72,7 @@ class UpenwrtHandler:
 		resp.last_modified = st.st_mtime
 		await resp.prepare(request)
 
-		sz = 256 * 1024
-		while True:
-			chunk = await fobj.read(sz)
-			if not chunk:
-				break
-			await resp.write(chunk)
+		await util.copy_stream(src=fobj, dst=resp)
 
 		return resp
 
