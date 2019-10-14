@@ -8,6 +8,7 @@ import shutil
 import attr
 
 from . import util
+from . import wrapio
 from .targetinfo import OpenwrtProfile
 
 
@@ -30,11 +31,11 @@ class OpenwrtOperation:
 
 	async def __aenter__(self):
 		if not self.workdir:
-			self.workdir = tempfile.mkdtemp(dir=self.context.workdir)
+			self.workdir = await wrapio.tempfile_mkdtemp(dir=self.context.workdir)
 
 	async def __aexit__(self, *args, **kwargs):
 		if self.workdir:
-			shutil.rmtree(self.workdir)
+			await wrapio.shutil_rmtree(self.workdir)
 			self.workdir = None
 
 	async def prepare(self):
@@ -108,7 +109,7 @@ class OpenwrtOperation:
 
 		outdir = p.join(prep.builddir, 'bin', 'targets', self.artifact.target_name)
 		logging.debug(f'OpenwrtOperation: build(): outdir at: {outdir}')
-		filelist = os.listdir(outdir)
+		filelist = await wrapio.os_listdir(outdir)
 		logging.debug(f'OpenwrtOperation: build(): outputs: {filelist}')
 
 		outputs = [ x for x in filelist if 'sysupgrade' in x ]

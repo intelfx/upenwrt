@@ -6,6 +6,7 @@ import logging
 import tempfile
 
 from . import util
+from . import wrapio
 from .targetinfo import OpenwrtTargetinfo
 
 
@@ -45,13 +46,13 @@ class OpenwrtArtifact:
 
 			self.imagebuilder_file = imagebuilder_file
 
-		target_path = tempfile.mkdtemp(dir=target_dir, prefix='imagebuilder')
+		target_path = wrapio.tempfile_mkdtemp(dir=target_dir, prefix='imagebuilder')
 		untar_imagebuilder = await util.run(
 			[ 'tar', '-xaf', self.imagebuilder_file ],
 			cwd=target_path,
 		)
 
-		filelist = os.listdir(target_path)
+		filelist = await wrapio.os_listdir(target_path)
 		if len(filelist) != 1:
 			raise RuntimeError(f'OpenwrtArtifact: got {len(filelist)} != 1 files after unpacking imagebuilder: {filelist}')
 

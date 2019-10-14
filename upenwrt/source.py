@@ -6,6 +6,7 @@ import re
 import tempfile
 
 from . import util
+from . import wrapio
 from .targetinfo import OpenwrtTargetinfo
 
 
@@ -41,7 +42,7 @@ class OpenwrtSource:
 		)
 		# Apply specific patches to the buildsystem that help us to (ab)use it in the way we want
 		patchdir = p.join(self.context.staticdir, 'patches')
-		for f in sorted(os.listdir(patchdir)):
+		for f in sorted(await wrapio.os_listdir(patchdir)):
 			git_am = await util.run(
 				[ 'git', 'am', '-3', p.join(patchdir, f) ],
 				cwd=target_path,
