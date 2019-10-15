@@ -24,6 +24,10 @@ die() {
 	exit 1
 }
 
+dbg() {
+	if test -n "$DEBUG"; then "$@"; fi
+}
+
 function log_choice() {
 	local name="$1"
 	local value="$(eval "echo \"\${${name}}\"")"
@@ -105,6 +109,14 @@ while test "$#" -ne 0; do
 	if test "$arg" == "$name"; then value=""; hasvalue=0; fi
 
 	case "$name" in
+	--debug)
+		var=DEBUG
+		needvalue=0
+		;;
+	--dry-run)
+		var=DRY_RUN
+		needvalue=0
+		;;
 	--hw-target)
 		var=TARGET_NAME
 		needvalue=1
@@ -222,11 +234,11 @@ log_choice REVISION
 
 # determine packages partial overrides
 if test -n "$PKGS_ADD"; then
-	log_choice PKGS_ADD
+	dbg log_choice PKGS_ADD
 fi
 
 if test -n "$PKGS_REMOVE"; then
-	log_choice PKGS_REMOVE
+	dbg log_choice PKGS_REMOVE
 fi
 
 # determine user-installed packages
@@ -249,11 +261,11 @@ log_choice PACKAGES
 # determine base URL
 BASE_URL="@BASE_URL@"
 BASE_URL_reason='server-passed'
-log_choice BASE_URL
+dbg log_choice BASE_URL
 
 API_ENDPOINT="@API_ENDPOINT@"
 API_ENDPOINT_reason='server-passed'
-log_choice API_ENDPOINT
+dbg log_choice API_ENDPOINT
 
 # determine target release
 if test -n "$TARGET"; then
@@ -276,7 +288,12 @@ CURL="$CURL -d 'target_version=$TARGET'"
 for p in $PACKAGES; do
 	CURL="$CURL -d 'pkgs=$p'"
 done
-log "\$CURL='$CURL'"
+dbg log "\$CURL='$CURL'"
+
+# exit at this point if we're asked not to do anything
+if test -n "$DRY_RUN"; then
+	exit 1
+fi
 
 # invoke curl protecting against server errors
 TMP_BODY="$(mktemp)"

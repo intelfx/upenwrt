@@ -29,6 +29,8 @@ Command-line arguments and environment variables used by the script:
 
 | Command-line argument                 | Environment variable        | Description                                                                     | Default                                                 |
 |---------------------------------------|-----------------------------|---------------------------------------------------------------------------------|---------------------------------------------------------|
+| `--debug`                             | `$DEBUG`                    | enable (more) verbose logging in the script itself                              | not set                                                 |
+| `--dry-run`                           | `$DRY_RUN`                  | do not call the server, only generate the curl(1) command line                  | not set                                                 |
 | `--hw-target`                         | `$TARGET_NAME`              | OpenWRT target name, e. g. `ramips/mt7621`                                      | overrides `$DISTRIB_TARGET` of `/etc/openwrt_release`   |
 | `--hw-target`                         | `$TARGET_NAME`              | OpenWRT target name, e. g. `ramips/mt7621`                                      | overrides `$DISTRIB_TARGET` of `/etc/openwrt_release`   |
 | `--hw-board`                          | `$BOARD_NAME`               | OpenWRT board name or profile name, e. g. `xiaomi,mir3g` or `mir3g`             | overrides `/tmp/sysinfo/board_name`                     |

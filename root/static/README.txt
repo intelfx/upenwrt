@@ -28,6 +28,12 @@ FILES
 
 OPTIONS
 
+    --debug
+        Enables (slightly more) verbose logging.
+
+    --dry-run
+        Skips the actual call; only generates a curl(1) command line.
+
     --hw-target TARGET-NAME
         OpenWRT target name (e. g. "ramips/mt7621").
         Overrides $TARGET_NAME and DISTRIB_TARGET= of /etc/openwrt_release.
@@ -63,6 +69,12 @@ OPTIONS
         Overrides $TARGET and defaults to "snapshot", which stands for the latest published nightly.
 
 ENVIRONMENT
+
+    DEBUG
+        Enables (slightly more) verbose logging.
+
+    DRY_RUN
+        Skips the actual call; only generates a curl(1) command line.
 
     TARGET_NAME
         OpenWRT target name (e. g. "ramips/mt7621").
