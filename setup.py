@@ -7,7 +7,7 @@ with open('README.md', 'r') as f:
 
 setuptools.setup(
 	name='upenwrt',
-	version='0.1.0',
+	version='0.1.1',
 	author='Ivan Shapovalov',
 	author_email='intelfx@intelfx.name',
 	description='A tool that generates custom OpenWRT sysupgrade images',
