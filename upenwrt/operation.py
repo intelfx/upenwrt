@@ -1,10 +1,7 @@
 #!/hint/python3
 
-import os
 import os.path as p
 import logging
-import tempfile
-import shutil
 import attr
 
 from . import util
@@ -29,14 +26,17 @@ class OpenwrtOperation:
 		self.packages = set(pkgs)
 		self.workdir = None
 
+
 	async def __aenter__(self):
 		if not self.workdir:
 			self.workdir = await wrapio.tempfile_mkdtemp(dir=self.context.workdir)
+
 
 	async def __aexit__(self, *args, **kwargs):
 		if self.workdir:
 			await wrapio.shutil_rmtree(self.workdir)
 			self.workdir = None
+
 
 	async def prepare(self):
 		assert(self.workdir)
@@ -94,10 +94,12 @@ class OpenwrtOperation:
 			packages=user_only_packages,
 		)
 
+
 	async def list_packages(self):
 		prep = await self.prepare()
 
 		return ' '.join(prep.packages)
+
 
 	async def build(self):
 		prep = await self.prepare()

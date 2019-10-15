@@ -1,7 +1,5 @@
 #!/hint/python3
 
-import os
-import sys
 import os.path as p
 import logging
 import time

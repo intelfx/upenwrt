@@ -1,10 +1,8 @@
 #!/hint/python3
 
-import os
 import sys
 import os.path as p
 import logging
-import asyncio
 import aiofiles
 import aiofiles.os
 import aiohttp.web

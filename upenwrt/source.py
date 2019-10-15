@@ -1,6 +1,5 @@
 #!/hint/python3
 
-import os
 import os.path as p
 import re
 import tempfile
@@ -23,11 +22,13 @@ class OpenwrtSource:
 			return f'v{release}'
 		raise ValueError(f'OpenwrtSource: bad revision: release={release}, revision={revision}')
 
+
 	def __init__(self, *, context, target_name, release, revision):
 		self.context = context
 		self.target_name = target_name
 		self.ref = OpenwrtSource.parse_ref(release=release, revision=revision)
 		self.targetinfo = None
+
 
 	async def get_checkout(self, target_dir):
 		repo_path = p.join(self.context.repodir, 'openwrt.git')
@@ -49,6 +50,7 @@ class OpenwrtSource:
 			)
 		return target_path
 
+
 	async def _make_targetinfo(self, source_dir):
 		if self.target_name.count('/') != 1:
 			raise ValueError(f'OpenwrtSource: bad board name: {self.target_name} (expected exactly 1 slash)')
@@ -60,6 +62,7 @@ class OpenwrtSource:
 				cwd=source_dir,
 			)
 		return targetinfo_path
+
 
 	async def get_targetinfo(self, source_dir):
 		if self.targetinfo is None:

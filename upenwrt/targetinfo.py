@@ -35,6 +35,7 @@ class OpenwrtTargetinfo:
 			logging.debug(f'OpenwrtTargetinfo(f={f.name}): parsing targetinfo')
 			self._parse_targetinfo(f)
 
+
 	def _parse_targetinfo(self, f):
 		targets = dict()
 		profiles = dict()
@@ -102,4 +103,3 @@ class OpenwrtTargetinfo:
 
 		self.profiles = profiles
 		self.targets = targets
-

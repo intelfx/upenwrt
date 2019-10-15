@@ -1,9 +1,6 @@
 #!/hint/python3
 
-import os
 import os.path as p
-import logging
-import tempfile
 
 from . import util
 from . import wrapio
@@ -14,11 +11,13 @@ class OpenwrtArtifact:
 	def openwrt_base_url(self):
 		return f'https://downloads.openwrt.org/{self.release_path}/targets/{self.target_name}'
 
+
 	def openwrt_imagebuilder_name(self):
 		if self.version_id == 'snapshot':
 			return f'openwrt-imagebuilder-{self.target_name.replace("/", "-")}.Linux-x86_64.tar.xz'
 		else:
 			return f'openwrt-imagebuilder-{self.version_id}-{self.target_name.replace("/", "-")}.Linux-x86_64.tar.xz'
+
 
 	def __init__(self, *, context, target_name, version_id):
 		self.context = context
@@ -36,6 +35,7 @@ class OpenwrtArtifact:
 		self.base_url = self.openwrt_base_url()
 		self.imagebuilder_file = None
 		self.targetinfo = None
+
 
 	async def get_imagebuilder(self, target_dir):
 		if not self.imagebuilder_file:
@@ -58,9 +58,8 @@ class OpenwrtArtifact:
 
 		return p.join(target_path, filelist[0])
 
+
 	async def get_targetinfo(self, imagebuilder_dir):
 		if self.targetinfo is None:
 			self.targetinfo = OpenwrtTargetinfo(p.join(imagebuilder_dir, '.targetinfo'))
 		return self.targetinfo
-
-
