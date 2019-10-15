@@ -1,5 +1,7 @@
 # upenwrt
 
+[![PyPI version](https://badge.fury.io/py/upenwrt.svg)](https://badge.fury.io/py/upenwrt)
+
 `upenwrt` is a tool, in form of a (simple) HTTP server, that generates custom
 [OpenWRT][1] sysupgrade images with all your user-installed packages baked in,
 on the fly.
