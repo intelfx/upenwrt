@@ -46,7 +46,7 @@ class OpenwrtArtifact:
 
 			self.imagebuilder_file = imagebuilder_file
 
-		target_path = wrapio.tempfile_mkdtemp(dir=target_dir, prefix='imagebuilder')
+		target_path = await wrapio.tempfile_mkdtemp(dir=target_dir, prefix='imagebuilder')
 		untar_imagebuilder = await util.run(
 			[ 'tar', '-xaf', self.imagebuilder_file ],
 			cwd=target_path,
