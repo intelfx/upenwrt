@@ -7,6 +7,7 @@ import attr
 from . import util
 from . import wrapio
 from .targetinfo import OpenwrtProfile
+from .util import UpenwrtError, UpenwrtUserError
 
 
 @attr.s(kw_only=True)
@@ -48,7 +49,15 @@ class OpenwrtOperation:
 		logging.debug(f'OpenwrtOperation: prepare(): builddir at: {builddir}')
 
 		bld_targetinfo = await self.artifact.get_targetinfo(builddir)
-		bld_profile = bld_targetinfo.profiles[self.board_name]
+		try:
+			bld_profile = bld_targetinfo.profiles[self.board_name]
+		except KeyError:
+			boards = '\n'.join([ f'\t - {b}' for b in sorted(bld_targetinfo.profiles.keys()) ])
+			raise UpenwrtUserError(f"""
+Invalid board name '{self.board_name}' for target '{self.target_name}'.
+Available boards and devices for this target:
+{boards}
+""".strip())
 		logging.debug(f'OpenwrtOperation: prepare(): builder profile: {bld_profile}')
 
 		if self.source:
