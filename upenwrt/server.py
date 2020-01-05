@@ -16,6 +16,7 @@ from . import util
 from .artifact import OpenwrtArtifact
 from .source import OpenwrtSource
 from .operation import OpenwrtOperation
+from .util import UpenwrtError, UpenwrtUserError
 
 
 @attr.s(kw_only=True)
@@ -151,13 +152,16 @@ class UpenwrtHandler:
 
 
 	@staticmethod
-	def handle_error(factory, text=None):
+	def handle_error(factory, text=None, user_error=False):
 		e = sys.exc_info()
 		traceback.print_exception(*e)
 
 		trace = "".join(traceback.format_exception(*e))
 		if text is not None:
-			body = f'{text.rstrip()}\n\n{trace}'
+			if user_error:
+				body = text
+			else:
+				body = f'{text.rstrip()}\n\n{trace}'
 		else:
 			body = trace
 
@@ -172,6 +176,12 @@ class UpenwrtHandler:
 		async def wrapped(request: aiohttp.web.Request):
 			try:
 				return await handler(request, *args, **kwargs)
+			except UpenwrtUserError as e:
+				UpenwrtHandler.handle_error(
+					factory=aiohttp.web.HTTPBadRequest,
+					text=str(e),
+					user_error=True,
+				)
 			except subprocess.CalledProcessError as e:
 				UpenwrtHandler.handle_error(
 					factory=aiohttp.web.HTTPInternalServerError,

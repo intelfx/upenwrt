@@ -14,6 +14,14 @@ import aiofiles.os
 from . import wrapio
 
 
+class UpenwrtError(Exception):
+	pass
+
+
+class UpenwrtUserError(UpenwrtError):
+	pass
+
+
 def configure_logging(*, prefix, debug):
 	fmt = '%(levelname)s: %(message)s'
 	kwargs = {}
