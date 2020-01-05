@@ -52,11 +52,11 @@ class OpenwrtOperation:
 		try:
 			bld_profile = bld_targetinfo.profiles[self.board_name]
 		except KeyError:
-			boards = '\n'.join([ f'\t - {b}' for b in sorted(bld_targetinfo.profiles.keys()) ])
+			targetinfo_dump = bld_targetinfo.dump()
 			raise UpenwrtUserError(f"""
-Invalid board name '{self.board_name}' for target '{self.target_name}'.
-Available boards and devices for this target:
-{boards}
+Invalid board or device name '{self.board_name}' for target '{self.target_name}'.
+Available targets, boards and devices for this imagebuilder:
+{targetinfo_dump}
 """.strip())
 		logging.debug(f'OpenwrtOperation: prepare(): builder profile: {bld_profile}')
 
