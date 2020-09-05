@@ -97,6 +97,8 @@ Available targets, boards and devices for this imagebuilder:
 			for p in packages:
 				if p.startswith('libgcc'):
 					yield 'libgcc'
+				elif p.startswith('kernel'):
+					pass
 				else:
 					yield p
 		packages = set(fixup_packages_early(packages))
