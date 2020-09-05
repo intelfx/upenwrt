@@ -89,7 +89,18 @@ Available targets, boards and devices for this imagebuilder:
 		default_packages = default_target_packages | default_profile_packages
 		logging.info(f'OpenwrtOperation: prepare(): client defaults: {default_packages}')
 		packages = self.packages
-		logging.info(f'OpenwrtOperation: prepare(): client packages: {packages}')
+		#logging.info(f'OpenwrtOperation: prepare(): client packages: {packages}')
+
+		# FIXME: correlate default and installed packages using Provides:
+		# HACK: replace known non-stable package names with their stable aliases
+		def fixup_packages_early(packages):
+			for p in packages:
+				if p.startswith('libgcc'):
+					yield 'libgcc'
+				else:
+					yield p
+		packages = set(fixup_packages_early(packages))
+		logging.info(f'OpenwrtOperation: prepare(): client packages (fixed-up): {packages}')
 
 		default_only_packages = default_packages - packages
 		user_only_packages = packages - default_packages
