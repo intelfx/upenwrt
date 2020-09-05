@@ -94,7 +94,18 @@ Available targets, boards and devices for this imagebuilder:
 		default_only_packages = default_packages - packages
 		user_only_packages = packages - default_packages
 		logging.info(f'OpenwrtOperation: prepare(): client REMOVED: {default_only_packages}')
-		logging.info(f'OpenwrtOperation: prepare(): client INSTALLED: {user_only_packages}')
+		#logging.info(f'OpenwrtOperation: prepare(): client INSTALLED: {user_only_packages}')
+
+		# FIXME: attempt Provides: substitution for client packages that do not exist in target
+		# HACK: replace known non-stable package names with their stable aliases
+		def fixup_packages(packages):
+			for p in packages:
+				if p.startswith('libustream-mbedtls'):
+					yield 'libustream-mbedtls'
+				else:
+					yield p
+		user_only_packages = set(fixup_packages(user_only_packages))
+		logging.info(f'OpenwrtOperation: prepare(): client INSTALLED (fixed-up): {user_only_packages}')
 
 		# noinspection PyArgumentList
 		return OpenwrtOperationDetails(
