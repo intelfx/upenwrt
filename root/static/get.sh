@@ -79,10 +79,10 @@ opkg_get_user() {
 	opkg_get_user_all > "$pkgs_0" # sorted
 
 	# add pkgs
-	printf "%s\n" $PKGS_ADD | sort > "$pkgs_add"
+	printf "%s\n" ${PKGS_ADD//,/ } | sort > "$pkgs_add"
 	cat "$pkgs_0" "$pkgs_add" | sort | uniq > "$pkgs_1"
 	# remove pkgs
-	printf "%s\n" $PKGS_REMOVE | sort > "$pkgs_remove"
+	printf "%s\n" ${PKGS_REMOVE//,/ } | sort > "$pkgs_remove"
 	cat "$pkgs_1" "$pkgs_remove" "$pkgs_remove" | sort | uniq -u > "$pkgs_2"
 	# write result
 	cat "$pkgs_2" | tr -s ' \n' ' '
