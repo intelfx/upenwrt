@@ -3,6 +3,7 @@
 import os.path as p
 import logging
 import attr
+import re
 
 from . import util
 from . import wrapio
@@ -113,8 +114,8 @@ Available targets, boards and devices for this imagebuilder:
 		# HACK: replace known non-stable package names with their stable aliases
 		def fixup_packages(packages):
 			for p in packages:
-				if p.startswith('libustream-mbedtls'):
-					yield 'libustream-mbedtls'
+				if m := re.fullmatch("(libustream-[a-z]+)([0-9]+)", p):
+					yield m.group(1)
 				else:
 					yield p
 		user_only_packages = set(fixup_packages(user_only_packages))
