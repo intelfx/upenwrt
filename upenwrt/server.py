@@ -165,7 +165,7 @@ class UpenwrtHandler:
 		else:
 			body = trace
 
-		raise factory(body=body)
+		raise factory(text=body)
 
 
 	ResponseCoroutine = Coroutine[Any, Any, aiohttp.web.Response]
