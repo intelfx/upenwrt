@@ -4,7 +4,7 @@ import os.path as p
 
 from . import util
 from . import wrapio
-from .targetinfo import OpenwrtTargetinfo
+from .targetinfo import OpenwrtTargetinfo, OpenwrtPackageinfo
 
 
 class OpenwrtArtifact:
@@ -35,6 +35,7 @@ class OpenwrtArtifact:
 		self.base_url = self.openwrt_base_url()
 		self.imagebuilder_file = None
 		self.targetinfo = None
+		self.packageinfo = None
 
 
 	async def get_imagebuilder(self, target_dir):
@@ -58,3 +59,9 @@ class OpenwrtArtifact:
 		if self.targetinfo is None:
 			self.targetinfo = OpenwrtTargetinfo(p.join(imagebuilder_dir, '.targetinfo'))
 		return self.targetinfo
+
+
+	async def get_packageinfo(self, imagebuilder_dir):
+		if self.packageinfo is None:
+			self.packageinfo = OpenwrtPackageinfo(p.join(imagebuilder_dir, '.packageinfo'))
+		return self.packageinfo

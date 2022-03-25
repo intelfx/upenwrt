@@ -20,6 +20,66 @@ class OpenwrtTarget:
 	profiles = attr.ib(type=dict)
 
 
+@attr.s(kw_only=True)
+class OpenwrtPackage:
+	name = attr.ib(type=str)
+	aliases = attr.ib(type=dict)
+
+
+class OpenwrtPackageinfo:
+	PACKAGEINFO_PACKAGE = re.compile('Package: (.+)')
+	PACKAGEINFO_PROVIDES = re.compile('Provides: (.+)')
+
+	def __init__(self, packageinfo):
+		self.packages = dict()
+		self.aliases = dict()
+
+		with open(packageinfo, 'r') as f:
+			logging.debug(f'OpenwrtPackageinfo(f={f.name}): parsing packageinfo')
+			self._parse_packageinfo(f)
+
+
+	def _parse_packageinfo(self, f):
+		packages = dict()
+		aliases = dict()
+		section = dict()
+		section_raw = []
+
+		for line in f:
+			line = line.rstrip('\n')
+			section_raw.append(line)
+
+			m = self.PACKAGEINFO_PACKAGE.fullmatch(line)
+			if m:
+				section['package'] = m[1]
+				continue
+			m = self.PACKAGEINFO_PROVIDES.fullmatch(line)
+			if m:
+				section['provides'] = set(m[1].split(' '))
+
+			if line == '@@':
+				if 'package' in section.keys():
+					package = OpenwrtPackage(
+						name=section['package'],
+						aliases=section.get('provides', set()),
+					)
+
+					packages[package.name] = package
+					aliases.setdefault(package.name, list()).append(package)
+					for a in package.aliases:
+						aliases.setdefault(a, list()).append(package)
+
+				else:
+					section_raw_string = '\n'.join(section_raw)
+					logging.debug(f'OpenwrtPackageinfo(f={f.name}): strange section:\n{section_raw_string}')
+
+				section = dict()
+				section_raw = []
+
+		self.packages = packages
+		self.aliases = aliases
+
+
 class OpenwrtTargetinfo:
 	TARGETINFO_TARGET = re.compile('Target: (.*)')
 	TARGETINFO_TARGET_PACKAGES = re.compile('Default-Packages: (.*)')
