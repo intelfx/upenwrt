@@ -318,8 +318,12 @@ trap cleanup EXIT
 eval "$CURL -sSL -w '%{http_code}' -o '$TMP_BODY' >'$TMP_STATUS'"
 STATUS="$(cat "$TMP_STATUS")"
 if [ -n "$STATUS" -a "$STATUS" -ge 200 -a "$STATUS" -lt 400 ]; then
-	cat "$TMP_BODY"
-	if [ -t 1 ]; then echo; fi
+	if [ -t 1 ]; then
+		mv "$TMP_BODY" /tmp/sysupgrade-$TARGET.img
+		echo /tmp/sysupgrade-$TARGET.img
+	else
+		cat "$TMP_BODY"
+	fi
 	rc=0
 else
 	cat "$TMP_BODY" >&2
