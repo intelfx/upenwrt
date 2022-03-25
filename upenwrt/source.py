@@ -44,6 +44,8 @@ class OpenwrtSource:
 		# Apply specific patches to the buildsystem that help us to (ab)use it in the way we want
 		patchdir = p.join(self.context.staticdir, 'patches')
 		for f in sorted(await wrapio.os_listdir(patchdir)):
+			if not f.endswith('.patch'):
+				continue
 			git_am = await util.run(
 				[ 'git', 'am', '-3', p.join(patchdir, f) ],
 				cwd=target_path,
