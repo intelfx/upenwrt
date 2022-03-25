@@ -36,59 +36,73 @@ function log_choice() {
 	log "\$$name='$value' ($reason)"
 }
 
+# Oh blackest aeon -- evaluated force
+# Holy mother, dreadful creature, be the reason for all cause
 AWK_FILTER_PACKAGES='
+function parse_vars()
+{
+	if (package_add != "") {
+		split(package_add, tmp, ",")
+		for (i in tmp) {
+			package_add[tmp[i]]=1
+		}
+	}
+
+	if (package_remove != "") {
+		split(package_remove, tmp, ",")
+		for (i in tmp) {
+			package_remove[tmp[i]]=1
+		}
+	}
+	delete tmp
+}
+
 function pkg_new(pkg)
 {
 	package = pkg
 	p_user = 0
+	p_provides = ""
 }
 
 function pkg_check()
 {
-	if (p_user) {
-		print package
+	if (package != "" && !(package in package_remove) && p_user) {
+		delete package_add[package]
+		if (p_provides != "") {
+			print package "," p_provides
+		} else {
+			print package
+		}
 	}
 }
 
-BEGIN { FS = ": " }
+function pkg_add() {
+	for (i in package_add) {
+		print i
+	}
+}
+
+BEGIN { FS = ": "; parse_vars() }
 /^Package: / { pkg_new($2) }
-/^Status: .*\<user\>.*/ { p_user = 1; pkg_check() }
+/^Provides: / { p_provides = gensub(/, /, ",", "g", $2) }
+/^Status: .*\<user\>.*/ { p_user = 1 }
+/^$/ { pkg_check() }
+END { pkg_check(); pkg_add() }
 '
 
 opkg_get_user_all() {
-	awk "$AWK_FILTER_PACKAGES" "$OPKG_STATUS" | sort
-}
-
-opkg_get_user_ovl() {
-	PKGS_IN_ROM="$(mktemp)"
-	PKGS_IN_OVL="$(mktemp)"
-	awk "$AWK_FILTER_PACKAGES" "$OPKG_STATUS_ROM" | sort > "$PKGS_IN_ROM"
-	awk "$AWK_FILTER_PACKAGES" "$OPKG_STATUS_OVL" | sort > "$PKGS_IN_OVL"
-	# comm -13
-	cat "$PKGS_IN_ROM" "$PKGS_IN_ROM" "$PKGS_IN_OVL" | sort | uniq -u
-	rm -f "$PKGS_IN_ROM" "$PKGS_IN_OVL"
+	awk "$@" "$AWK_FILTER_PACKAGES" "$OPKG_STATUS" | sort
 }
 
 opkg_get_user() {
-	pkgs_add="$(mktemp)"
-	pkgs_remove="$(mktemp)"
-	pkgs_0="$(mktemp)"
-	pkgs_1="$(mktemp)"
 	pkgs_2="$(mktemp)"
 
-	opkg_get_user_all > "$pkgs_0" # sorted
-
-	# add pkgs
-	printf "%s\n" ${PKGS_ADD//,/ } | sort > "$pkgs_add"
-	cat "$pkgs_0" "$pkgs_add" | sort | uniq > "$pkgs_1"
-	# remove pkgs
-	printf "%s\n" ${PKGS_REMOVE//,/ } | sort > "$pkgs_remove"
-	cat "$pkgs_1" "$pkgs_remove" "$pkgs_remove" | sort | uniq -u > "$pkgs_2"
+	opkg_get_user_all -v package_add="$PKGS_ADD" -v package_remove="$PKGS_REMOVE" > "$pkgs_2"
 	# write result
 	cat "$pkgs_2" | tr -s ' \n' ' '
 
 	# remove temp files
-	rm -f "$pkgs_0" "$pkgs_1" "$pkgs_2" "$pkgs_add" "$pkgs_remove"
+	rm -f "$pkgs_2"
 }
 
 
