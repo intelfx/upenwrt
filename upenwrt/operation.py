@@ -25,7 +25,7 @@ class OpenwrtOperation:
 		self.artifact = artifact
 		self.target_name = target_name
 		self.board_name = board_name
-		self.packages = set(pkgs)
+		self.packages = pkgs
 		self.workdir = None
 
 
@@ -49,9 +49,13 @@ class OpenwrtOperation:
 		builddir = await self.artifact.get_imagebuilder(self.workdir)
 		logging.debug(f'OpenwrtOperation: prepare(): builddir at: {builddir}')
 
+		bld_packageinfo = await self.artifact.get_packageinfo(builddir)
 		bld_targetinfo = await self.artifact.get_targetinfo(builddir)
 		try:
+			bld_target = bld_targetinfo.targets[self.target_name]
+			logging.debug(f'OpenwrtOperation: prepare(): builder target: {bld_target}')
 			bld_profile = bld_targetinfo.profiles[self.board_name]
+			logging.debug(f'OpenwrtOperation: prepare(): builder profile: {bld_profile}')
 		except KeyError:
 			targetinfo_dump = bld_targetinfo.dump()
 			raise UpenwrtUserError(f"""
@@ -59,7 +63,6 @@ Invalid board or device name '{self.board_name}' for target '{self.target_name}'
 Available targets, boards and devices for this imagebuilder:
 {targetinfo_dump}
 """.strip())
-		logging.debug(f'OpenwrtOperation: prepare(): builder profile: {bld_profile}')
 
 		if self.source:
 			sourcedir = await self.source.get_checkout(self.workdir)
@@ -89,43 +92,89 @@ Available targets, boards and devices for this imagebuilder:
 
 		default_packages = default_target_packages | default_profile_packages
 		logging.info(f'OpenwrtOperation: prepare(): client defaults: {default_packages}')
-		packages = self.packages
-		#logging.info(f'OpenwrtOperation: prepare(): client packages: {packages}')
 
-		# FIXME: correlate default and installed packages using Provides:
-		# HACK: replace known non-stable package names with their stable aliases
-		def fixup_packages_early(packages):
+		logging.info(f'OpenwrtOperation: prepare(): client packages (raw): {self.packages}')
+
+		# 0. Load input packages, parse aliases
+		def load_packages(packages):
 			for p in packages:
-				if p.startswith('libgcc'):
-					yield 'libgcc'
-				elif p.startswith('kernel'):
-					pass
+				aliases = p.split(',')
+				yield aliases[0], set(aliases[1:])
+		aliases = dict(load_packages(self.packages))
+		packages = set(aliases.keys())
+		logging.info(f'OpenwrtOperation: prepare(): client packages: {packages}')
+
+		# 1. correlate default and installed packages using Provides:
+		def correlate_defaults(packages, aliases, src_defaults):
+			for p in packages:
+				# shortcut
+				if p in src_defaults:
+					yield p
+					continue
+
+				correlated = set()
+				for a in aliases[p]:
+					# try to correlate with default packages in source
+					if a in src_defaults:
+						correlated.add(a)
+
+				if len(correlated) > 1:
+					raise RuntimeError(f'OpenwrtOperation: prepare(): package {p} is referenced by more than one alias in defaults: {correlated}')
+				elif correlated:
+					yield correlated.pop()
 				else:
 					yield p
-		packages = set(fixup_packages_early(packages))
-		logging.info(f'OpenwrtOperation: prepare(): client packages (fixed-up): {packages}')
+		packages = set(correlate_defaults(packages, aliases, default_packages))
+		logging.info(f'OpenwrtOperation: prepare(): client packages (correlated 1): {packages}')
 
 		default_only_packages = default_packages - packages
 		user_only_packages = packages - default_packages
 		logging.info(f'OpenwrtOperation: prepare(): client REMOVED: {default_only_packages}')
-		#logging.info(f'OpenwrtOperation: prepare(): client INSTALLED: {user_only_packages}')
+		logging.info(f'OpenwrtOperation: prepare(): client INSTALLED: {user_only_packages}')
 
-		# FIXME: attempt Provides: substitution for client packages that do not exist in target
-		# HACK: replace known non-stable package names with their stable aliases
-		def fixup_packages(packages):
+		# 2. attempt Provides: substitution for client packages that do not exist in target
+		def correlate_target(packages, aliases, target_packageinfo):
 			for p in packages:
-				if m := re.fullmatch("(libustream-[a-z]+)([0-9]+)", p):
-					yield m.group(1)
+				# shortcut
+				if p in target_packageinfo.aliases:
+					yield p
+					continue
+
+				correlated = set()
+				# FIXME: after first round of correlation, aliases might become mismatched with packages
+				for a in aliases.get(p, ()):
+					# try to correlate with packages that exist in target
+					if a in target_packageinfo.aliases:
+						# there may be multiple aliases pointing to the same package, both in source information and in target information
+						# e. g. in source, libwolfssl<unique> provides libwolfssl, libcyassl
+						#       in target, libwolfssl<unique2> provides libwolfssl, libcyassl
+						# naïvely, this is a failure condition because libwolfssl<unique> is referenced by two aliases both of which exist in target
+						# but in fact, the situation is still unambiguous
+						#for p2 in target_packageinfo.aliases[a]:
+						#	correlated.add(p2.name)
+						correlated.add(a)
+
+				if len(correlated) > 1:
+					# HACK: if we managed to get into this situation, try to select a single preferred alias that is a substring of package name
+					preferred = { c for c in correlated if c in p }
+					if len(preferred) == 1:
+						yield preferred.pop()
+						continue
+
+					raise RuntimeError(f'OpenwrtOperation: prepare(): package {p} has more than one alias in target: {correlated}')
+				elif correlated:
+					yield correlated.pop()
 				else:
 					yield p
-		user_only_packages = set(fixup_packages(user_only_packages))
-		logging.info(f'OpenwrtOperation: prepare(): client INSTALLED (fixed-up): {user_only_packages}')
+		packages = set(correlate_target(packages, aliases, bld_packageinfo))
+		logging.info(f'OpenwrtOperation: prepare(): client INSTALLED (correlated 2): {packages}')
+
 
 		# noinspection PyArgumentList
 		return OpenwrtOperationDetails(
 			builddir=builddir,
 			profile=bld_profile,
-			packages=user_only_packages,
+			packages=packages,
 		)
 
 
