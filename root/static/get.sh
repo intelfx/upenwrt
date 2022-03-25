@@ -151,11 +151,11 @@ while test "$#" -ne 0; do
 		var=PACKAGES
 		needvalue=1
 		;;
-	-A|--packages-add)
+	-A|--packages-add|--pkg-add|--pkgs-add)
 		var=PKGS_ADD
 		needvalue=1
 		;;
-	-S|--packages-remove)
+	-S|--packages-remove|--pkg-remove|--pkgs-remove)
 		var=PKGS_REMOVE
 		needvalue=1
 		;;
