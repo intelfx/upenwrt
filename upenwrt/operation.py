@@ -166,15 +166,14 @@ Available targets, boards and devices for this imagebuilder:
 					yield correlated.pop()
 				else:
 					yield p
-		packages = set(correlate_target(packages, aliases, bld_packageinfo))
-		logging.info(f'OpenwrtOperation: prepare(): client INSTALLED (correlated 2): {packages}')
-
+		user_only_packages = set(correlate_target(user_only_packages, aliases, bld_packageinfo))
+		logging.info(f'OpenwrtOperation: prepare(): client INSTALLED (correlated 2): {user_only_packages}')
 
 		# noinspection PyArgumentList
 		return OpenwrtOperationDetails(
 			builddir=builddir,
 			profile=bld_profile,
-			packages=packages,
+			packages=user_only_packages,
 		)
 
 
